@@ -59,7 +59,7 @@ export const CompactProjectCard: React.FC<CompactProjectCardProps> = ({
                   {project.statusBadge}
                 </span>
                 <span className="text-xs font-mono text-slate-400">
-                  {project.number} // DESTAQUE PRINCIPAL
+                  {project.number}
                 </span>
               </div>
 

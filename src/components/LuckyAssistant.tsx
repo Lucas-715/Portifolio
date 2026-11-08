@@ -32,10 +32,18 @@ const COMPLAINT_PHRASES = [
 
 const CUTE_FREQS = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50];
 
+const CIPHER_GLYPHS = '01#@!$%&*<>{}[]/?~+=ABCDEF0123456789§∆';
+
+const getRandomCipherChar = () => {
+  return CIPHER_GLYPHS[Math.floor(Math.random() * CIPHER_GLYPHS.length)];
+};
+
 export const LuckyAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [speechBubble, setSpeechBubble] = useState<string | null>(null);
   const [displayedSpeech, setDisplayedSpeech] = useState<string>('');
+  const [isDecrypting, setIsDecrypting] = useState(false);
+  const [isDecryptedBadge, setIsDecryptedBadge] = useState(false);
   const [eyeState, setEyeState] = useState<'normal' | 'blink' | 'happy' | 'scan' | 'angry' | 'charge'>('normal');
   const [eyeLook, setEyeLook] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: 24, y: 24 });
@@ -207,6 +215,8 @@ export const LuckyAssistant: React.FC = () => {
       clearTimeout(bubbleTimerRef.current);
       bubbleTimerRef.current = null;
     }
+    setIsDecrypting(false);
+    setIsDecryptedBadge(false);
     setSpeechBubble(text);
     setDisplayedSpeech('');
 
@@ -232,6 +242,77 @@ export const LuckyAssistant: React.FC = () => {
       bubbleTimerRef.current = null;
     }, comfortableReadingDuration);
   }, [playTypewriterClick]);
+
+  // Efeito cyberpunk de decodificação / descriptografia de mensagens criptografadas ao rolar a página
+  const showDecryptingBubble = useCallback(
+    (targetText: string, duration = 9500) => {
+      if (typingTimerRef.current) {
+        clearInterval(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+      if (bubbleTimerRef.current) {
+        clearTimeout(bubbleTimerRef.current);
+        bubbleTimerRef.current = null;
+      }
+
+      setSpeechBubble(targetText);
+      setIsDecrypting(true);
+      setIsDecryptedBadge(false);
+      setEyeState('scan');
+
+      const totalLen = targetText.length;
+      let progress = 0;
+      let frame = 0;
+      const initialScrambleFrames = 6;
+
+      const interval = setInterval(() => {
+        frame++;
+
+        if (frame <= initialScrambleFrames) {
+          // Fase 1: Cifra 100% criptografada aleatória
+          let scrambled = '';
+          const maxGlyphs = Math.min(totalLen, 48);
+          for (let i = 0; i < maxGlyphs; i++) {
+            scrambled += targetText[i] === ' ' ? ' ' : getRandomCipherChar();
+          }
+          setDisplayedSpeech(scrambled);
+          playTypewriterClick();
+        } else {
+          // Fase 2: Descriptografia progressiva caractere a caractere
+          progress += 3;
+          if (progress >= totalLen) {
+            setDisplayedSpeech(targetText);
+            setIsDecrypting(false);
+            setIsDecryptedBadge(true);
+            clearInterval(interval);
+            typingTimerRef.current = null;
+
+            playCuteChirpMelody(2);
+            setEyeState('happy');
+            setTimeout(() => setEyeState('normal'), 2500);
+
+            // Inicia o temporizador estendido para leitura relaxada após a descriptografia
+            const comfortableDuration = Math.max(duration, 5500 + totalLen * 50);
+            bubbleTimerRef.current = window.setTimeout(() => {
+              setSpeechBubble((current) => (current === targetText ? null : current));
+              setIsDecryptedBadge(false);
+              bubbleTimerRef.current = null;
+            }, comfortableDuration);
+          } else {
+            let currentStr = targetText.slice(0, progress);
+            for (let i = progress; i < totalLen; i++) {
+              currentStr += targetText[i] === ' ' ? ' ' : getRandomCipherChar();
+            }
+            setDisplayedSpeech(currentStr);
+            playTypewriterClick();
+          }
+        }
+      }, 28);
+
+      typingTimerRef.current = interval as unknown as number;
+    },
+    [playTypewriterClick, playCuteChirpMelody]
+  );
 
   // Blinking & scanning loops
   useEffect(() => {
@@ -311,15 +392,12 @@ export const LuckyAssistant: React.FC = () => {
             setTimeout(() => setTiltAngle(0), 500);
           }
 
-          // Trigger section speech if cooldown passed (duração estendida de ~9.5s para leitura tranquila ao rolar)
+          // Trigger section speech if cooldown passed (descriptografia visual cyberpunk ao descer a página)
           const now = Date.now();
           const lastSpoken = sectionCooldownRef.current[currentSec] || 0;
-          if (now - lastSpoken > 26000 && prevSec !== null) {
+          if (now - lastSpoken > 24000 && prevSec !== null) {
             sectionCooldownRef.current[currentSec] = now;
-            showBubble(secConfig.phrase, 9500);
-            playCuteChirpMelody(2);
-            setEyeState('happy');
-            setTimeout(() => setEyeState('normal'), 2500);
+            showDecryptingBubble(secConfig.phrase, 9500);
           }
         }
       }
@@ -327,33 +405,38 @@ export const LuckyAssistant: React.FC = () => {
 
     window.addEventListener('scroll', handleScrollWatcher, { passive: true });
     return () => window.removeEventListener('scroll', handleScrollWatcher);
-  }, [followMouse, isPreparingFollow, showBubble, playCuteChirpMelody]);
+  }, [followMouse, isPreparingFollow, showDecryptingBubble]);
 
-  // REAÇÃO AO MODO INSPECIONAR / DEVTOOLS
+  // REAÇÃO AO MODO INSPECIONAR / DEVTOOLS (Sabe exatamente o que o usuário está fazendo)
   useEffect(() => {
     let lastInspectSpoken = 0;
 
     const triggerInspectSpeech = () => {
       const now = Date.now();
-      if (now - lastInspectSpoken < 25000) return; // 25s cooldown
+      if (now - lastInspectSpoken < 18000) return; // 18s cooldown
       lastInspectSpoken = now;
 
       const phrases = [
-        'Opa, abrindo o Inspecionar? 👀 Pode auditar o código à vontade: TypeScript puro, Tailwind e zero gambiarra!',
-        'Modo Inspecionar ativado! 🕵️ Analisando os componentes? O código fonte é 100% aberto no GitHub do Lucas!',
-        'Auditoria técnica em andamento! ⚡ No console tá tudo limpo, componentes modulares e testes com pytest.',
-        'Curioso sobre a arquitetura? 💻 Pode debugar à vontade: zero bibliotecas 3D pesadas e 100% responsivo!',
+        'Eu sei exatamente o que você está fazendo... Achou que eu não ia ver você abrindo o Inspecionar? 👀 Pode auditar, o código é 100% limpo e modular!',
+        'Flagrado no Inspecionar! 🤖🔍 Eu sei o que você está fazendo aí! Fique à vontade para inspecionar os componentes, hooks e testes!',
+        'Opa! Eu sei o que você está fazendo... 🕵️ Abrindo as ferramentas de desenvolvedor? Pode debugar com calma, zero gambiarras!',
+        'Não adianta disfarçar, eu sei o que você está fazendo! 👀 Inspecionando o código do Lucas? Tudo feito com boas práticas e TypeScript puro!',
       ];
       const text = phrases[Math.floor(Math.random() * phrases.length)];
 
-      showBubble(text, 4500);
+      showBubble(text, 8500);
       playCuteChirpMelody(3);
       setEyeState('scan');
-      setTimeout(() => setEyeState('happy'), 1600);
-      setTimeout(() => setEyeState('normal'), 3200);
+      setTimeout(() => setEyeState('happy'), 1800);
+      setTimeout(() => setEyeState('normal'), 3500);
     };
 
-    // 1. Atalhos de teclado comuns de Inspecionar (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C)
+    // 1. Ao clicar com o botão direito para apertar em "Inspecionar" no navegador
+    const handleContextMenu = () => {
+      triggerInspectSpeech();
+    };
+
+    // 2. Atalhos de teclado comuns de Inspecionar (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C)
     const handleInspectKeys = (e: KeyboardEvent) => {
       const isCtrlOrMeta = e.ctrlKey || e.metaKey;
       const isShift = e.shiftKey;
@@ -367,7 +450,7 @@ export const LuckyAssistant: React.FC = () => {
       }
     };
 
-    // 2. Detecção de dock do DevTools por redimensionamento assimétrico da viewport
+    // 3. Detecção de dock do DevTools por redimensionamento assimétrico da viewport
     let resizeTimer: number;
     const handleResize = () => {
       clearTimeout(resizeTimer);
@@ -381,7 +464,7 @@ export const LuckyAssistant: React.FC = () => {
       }, 300);
     };
 
-    // 3. Console getter probe: acionado na avaliação do console pelo navegador
+    // 4. Console getter probe: acionado na avaliação do console pelo navegador
     const element = new Image();
     Object.defineProperty(element, 'id', {
       get: function () {
@@ -394,10 +477,12 @@ export const LuckyAssistant: React.FC = () => {
       console.debug('%c', element);
     }, 2500);
 
+    window.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('keydown', handleInspectKeys);
     window.addEventListener('resize', handleResize);
 
     return () => {
+      window.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('keydown', handleInspectKeys);
       window.removeEventListener('resize', handleResize);
       clearInterval(consoleProbe);
@@ -1064,21 +1149,43 @@ export const LuckyAssistant: React.FC = () => {
           dockSide === 'left' ? 'items-start' : 'items-end'
         }`}
       >
-        {/* SPEECH BUBBLE WITH REAL TYPEWRITER EFFECT */}
+        {/* SPEECH BUBBLE WITH REAL TYPEWRITER EFFECT & CYPHER DECRYPTOR */}
         {speechBubble && (
           <div
             onClick={() => setSpeechBubble(null)}
             title="Clique para fechar"
-            className={`mb-2 max-w-[280px] sm:max-w-[320px] bg-[#0c051f]/95 border-2 border-cyan-400 text-cyan-100 text-xs font-mono px-3.5 py-2.5 rounded-2xl shadow-[0_0_25px_rgba(0,240,255,0.35)] backdrop-blur-md animate-fadeIn relative cursor-pointer select-none ${
+            className={`mb-2 max-w-[280px] sm:max-w-[320px] bg-[#0c051f]/95 border-2 text-xs font-mono px-3.5 py-2.5 rounded-2xl backdrop-blur-md animate-fadeIn relative cursor-pointer select-none transition-all ${
+              isDecrypting
+                ? 'border-emerald-400 text-emerald-200 shadow-[0_0_25px_rgba(16,185,129,0.35)]'
+                : 'border-cyan-400 text-cyan-100 shadow-[0_0_25px_rgba(0,240,255,0.35)]'
+            } ${
               dockSide === 'left' ? 'rounded-bl-xs' : 'rounded-br-xs'
             }`}
           >
-            <p className="leading-snug font-medium">
+            {isDecrypting && (
+              <div className="flex items-center gap-1.5 pb-1 mb-1.5 border-b border-emerald-500/30 text-[9px] font-mono text-emerald-400 font-bold uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                <span>DECRIPTANDO TRANSMISSÃO...</span>
+              </div>
+            )}
+            {isDecryptedBadge && !isDecrypting && (
+              <div className="flex items-center gap-1.5 pb-1 mb-1.5 border-b border-cyan-500/30 text-[9px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f0ff] shrink-0" />
+                <span>TRANSMISSÃO DESCRIPTOGRAFADA</span>
+              </div>
+            )}
+            <p className="leading-snug font-medium break-words">
               {displayedSpeech}
-              <span className="inline-block w-1.5 h-3 bg-cyan-400 ml-0.5 animate-pulse align-middle" />
+              <span
+                className={`inline-block w-1.5 h-3 ${
+                  isDecrypting ? 'bg-emerald-400' : 'bg-cyan-400'
+                } ml-0.5 animate-pulse align-middle`}
+              />
             </p>
             <div
-              className={`absolute -bottom-2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-cyan-400 ${
+              className={`absolute -bottom-2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] ${
+                isDecrypting ? 'border-t-emerald-400' : 'border-t-cyan-400'
+              } ${
                 dockSide === 'left' ? 'left-4' : 'right-4'
               }`}
             />

@@ -23,7 +23,6 @@ import {
 
 export function App() {
   const [isIfoodRef, setIsIfoodRef] = useState(false);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [activeDrawerProject, setActiveDrawerProject] = useState<MainProject | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
@@ -54,47 +53,6 @@ export function App() {
     return () => observer.disconnect();
   }, []);
 
-  // Navbar Scroll-Spy: Top (hero) = null, Bottom = 'contato'
-  useEffect(() => {
-    const sections = ['projetos', 'skills', 'formacao', 'contato'];
-
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const viewportHeight = window.innerHeight;
-      const fullHeight = document.documentElement.scrollHeight;
-
-      // 1. Hero is visible: no active nav link
-      if (scrollY < 280) {
-        setActiveSection(null);
-        return;
-      }
-
-      // 2. Reached bottom of page: Contato MUST be active
-      if (scrollY + viewportHeight >= fullHeight - 120) {
-        setActiveSection('contato');
-        return;
-      }
-
-      // 3. Otherwise detect section in current viewport
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const id = sections[i];
-        const el = document.getElementById(id);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= viewportHeight * 0.45 && rect.bottom >= viewportHeight * 0.15) {
-            setActiveSection(id);
-            return;
-          }
-        }
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
     <div className="relative min-h-screen bg-[#04020a] text-slate-100 selection:bg-cyan-500/30 selection:text-white overflow-x-hidden">
       {/* 1. 3D ORBITAL GLOBE */}
@@ -103,66 +61,11 @@ export function App() {
       {/* 2. COMPACT CYBERPUNK ASSISTANT (LUCKY) */}
       <LuckyAssistant />
 
-      {/* 3. SLIM HYBRID NAVBAR WITH SCROLL-SPY */}
-      <header className="fixed top-0 inset-x-0 z-40 bg-[#04020a]/80 backdrop-blur-md border-b border-white/[0.06] transition-all">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <a
-            href="#top"
-            className="font-display font-bold text-sm tracking-wider text-white hover:text-cyan-300 transition-colors flex items-center gap-2"
-          >
-            <span className="w-2 h-2 rounded-xs bg-cyan-400 shadow-[0_0_8px_#00f0ff]" />
-            <span>Lucas Almeida</span>
-          </a>
-
-          <nav aria-label="Navegação principal" className="hidden sm:flex items-center gap-6 text-xs font-mono">
-            {[
-              { id: 'projetos', label: 'Projetos' },
-              { id: 'skills', label: 'Stack' },
-              { id: 'formacao', label: 'Formação' },
-              { id: 'contato', label: 'Contato' },
-            ].map((item) => (
-              <a
-                key={item.id}
-                href={`#${item.id}`}
-                className={`transition-colors py-1 relative ${
-                  activeSection === item.id
-                    ? 'text-cyan-300 font-bold'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                {item.label}
-                {activeSection === item.id && (
-                  <span className="absolute -bottom-2.5 inset-x-0 h-0.5 bg-cyan-400 shadow-[0_0_8px_#00f0ff]" />
-                )}
-              </a>
-            ))}
-
-            <a
-              href={CONTACT_INFO.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 ml-2 pl-3 border-l border-white/10"
-              title="GitHub de Lucas Almeida"
-            >
-              <Github className="w-3.5 h-3.5" />
-              <span>GitHub</span>
-            </a>
-          </nav>
-
-          <a
-            href="#projetos"
-            className="sm:hidden px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 text-xs font-mono font-bold"
-          >
-            Projetos
-          </a>
-        </div>
-      </header>
-
-      {/* 4. OPTIONAL DYNAMIC CONTEXT BANNER (?ref=ifood) */}
+      {/* 3. OPTIONAL DYNAMIC CONTEXT BANNER (?ref=ifood) */}
       {isIfoodRef && (
         <aside
           aria-label="Notificação de contexto"
-          className="fixed top-16 inset-x-0 z-30 px-6 pointer-events-none"
+          className="fixed top-4 inset-x-0 z-30 px-6 pointer-events-none"
         >
           <div className="max-w-xl mx-auto px-4 py-2 rounded-full bg-rose-950/90 border border-rose-500/40 backdrop-blur-md shadow-[0_0_20px_rgba(244,63,94,0.3)] flex items-center justify-between text-xs font-mono text-rose-200 pointer-events-auto">
             <span className="flex items-center gap-2">
@@ -180,16 +83,11 @@ export function App() {
       )}
 
       {/* MAIN CONTENT */}
-      <main id="top" className="relative z-10 pt-14">
+      <main id="top" className="relative z-10 pt-4">
         {/* HERO SECTION */}
-        <section className="min-h-[85vh] flex flex-col items-center justify-center pt-20 pb-16 px-6 sm:px-12 text-center">
+        <section className="min-h-[85vh] flex flex-col items-center justify-center pt-16 pb-16 px-6 sm:px-12 text-center">
           <div className="max-w-3xl mx-auto flex flex-col items-center relative">
             <div className="absolute -inset-10 bg-radial from-[#04020a]/95 via-[#04020a]/80 to-transparent -z-10 blur-2xl pointer-events-none" />
-
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#080417]/95 border border-cyan-400/40 text-xs font-mono text-cyan-300 mb-6 backdrop-blur-md shadow-[0_0_15px_rgba(0,240,255,0.15)]">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-semibold">Disponível para estágio</span>
-            </div>
 
             <h1 className="font-display text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-cyber-gradient leading-[1.04] drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
               Lucas Almeida
@@ -241,9 +139,6 @@ export function App() {
                   </p>
                   <p>
                     Em projetos acadêmicos e autorais, desenvolvo desde interfaces com Vue.js 3 e Next.js até experimentos de Machine Learning com PyTorch com múltiplas sementes e desvio padrão.
-                  </p>
-                  <p className="text-xs font-mono text-cyan-300 font-semibold pt-1">
-                    Líder do Time de Cursos no PAE (UFC)
                   </p>
                 </div>
               </div>
