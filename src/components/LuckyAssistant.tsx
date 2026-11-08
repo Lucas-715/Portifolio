@@ -16,10 +16,10 @@ interface QuickLink {
 }
 
 const QUICK_LINKS: QuickLink[] = [
-  { id: 'projetos', label: 'Projetos', icon: '🚀', speech: 'Projetos em destaque com validação experimental e código aberto!' },
-  { id: 'skills', label: 'Stack', icon: '⚡', speech: 'Arsenal Tecnológico: PyTorch, Next.js, Vue, FastAPI e SQLite!' },
-  { id: 'formacao', label: 'Formação', icon: '🎓', speech: 'Trajetória acadêmica e atuação universitária na UFC, IFMA e PET!' },
-  { id: 'contato', label: 'Contato', icon: '📬', speech: 'Bora trocar uma ideia com o Lucas? Contatos disponíveis aqui!' },
+  { id: 'projetos', label: 'Projetos', icon: '🚀', speech: 'Projetos com validação e código aberto!' },
+  { id: 'skills', label: 'Stack', icon: '⚡', speech: 'Arsenal: PyTorch, Next.js, FastAPI e Docker!' },
+  { id: 'formacao', label: 'Formação', icon: '🎓', speech: 'IFMA, Engenharia na UFC e extensão.' },
+  { id: 'contato', label: 'Contato', icon: '📬', speech: 'Bora conversar? Canais abertos!' },
 ];
 
 const COMPLAINT_PHRASES = [
@@ -80,6 +80,9 @@ export const LuckyAssistant: React.FC = () => {
   const typingTimerRef = useRef<number | null>(null);
   const bubbleTimerRef = useRef<number | null>(null);
   const prepareFollowTimeoutRef = useRef<number | null>(null);
+  const scrollDebounceTimerRef = useRef<number | null>(null);
+  const isSprintActiveRef = useRef<boolean>(false);
+  const lastClickTimeRef = useRef<number>(0);
 
   // Audio Context initialization
   const getAudioContext = () => {
@@ -92,9 +95,13 @@ export const LuckyAssistant: React.FC = () => {
     return audioCtxRef.current;
   };
 
-  // Subtle typewriter click synthesis
+  // Suave e comedido som mecânico de digitação (com limitação de taxa para nunca poluir os ouvidos)
   const playTypewriterClick = useCallback(() => {
     if (!soundEnabled) return;
+    const now = Date.now();
+    if (now - lastClickTimeRef.current < 65) return; // Limita a no máximo 1 clique a cada 65ms
+    lastClickTimeRef.current = now;
+
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -103,14 +110,14 @@ export const LuckyAssistant: React.FC = () => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1400 + (Math.random() - 0.5) * 500, ctx.currentTime);
-      gain.gain.setValueAtTime(0.012, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.022);
+      osc.frequency.setValueAtTime(1400 + (Math.random() - 0.5) * 400, ctx.currentTime);
+      gain.gain.setValueAtTime(0.005, ctx.currentTime); // Volume reduzido e suave
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.018);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.025);
+      osc.stop(ctx.currentTime + 0.02);
     } catch {
       /* ignore */
     }
@@ -344,20 +351,21 @@ export const LuckyAssistant: React.FC = () => {
 
   useEffect(() => {
     const handleScrollWatcher = () => {
-      if (followMouse || isDraggingRef.current) return;
+      // Bloqueia comentários de scroll se estiver seguindo o mouse, arrastando ou se o robô estiver na corrida do iFood/Duolingo
+      if (followMouse || isDraggingRef.current || dashState !== 'idle' || isSprintActiveRef.current) return;
 
       const scrollY = window.scrollY;
       const viewportHeight = window.innerHeight;
       const docHeight = document.documentElement.scrollHeight;
-      const winW = typeof window !== 'undefined' ? window.innerWidth : 1200;
 
+      // Textos concisos e diretos para o chatbot
       const sections = [
-        { id: 'top', side: 'right', phrase: 'E aí! Sou o Lucky. Role para explorar os projetos e a trajetória do Lucas!' },
-        { id: 'sobre', side: 'left', phrase: 'Engenharia de software com modularidade, testes automatizados e IA prática.' },
-        { id: 'projetos', side: 'right', phrase: 'Destaque no Federated-XAI-Lab: 5 sementes no UCI HAR e Macro-F1 de 0,9270!' },
-        { id: 'skills', side: 'left', phrase: 'Arsenal Tecnológico! PyTorch, Next.js, Vue.js 3, FastAPI, SQLite e Docker.' },
-        { id: 'formacao', side: 'right', phrase: 'Trajetória completa: IFMA, Engenharia na UFC e mais de 400h comprovadas de extensão!' },
-        { id: 'contato', side: 'right', phrase: 'Chegou ao fim da base! Bora trocar uma ideia com o Lucas? O contato tá aqui!' },
+        { id: 'top', side: 'right', phrase: 'E aí! Sou o Lucky. Role para explorar!' },
+        { id: 'sobre', side: 'left', phrase: 'Engenharia, boas práticas e IA prática.' },
+        { id: 'projetos', side: 'right', phrase: 'Projetos em IA, Aprendizado Federado e XAI!' },
+        { id: 'skills', side: 'left', phrase: 'Stack: PyTorch, Next.js, FastAPI e Docker.' },
+        { id: 'formacao', side: 'right', phrase: 'Formação: IFMA, Engenharia na UFC e extensão!' },
+        { id: 'contato', side: 'right', phrase: 'Bora conversar? Canais abertos!' },
       ];
 
       let currentSec = 'top';
@@ -385,31 +393,39 @@ export const LuckyAssistant: React.FC = () => {
 
         const secConfig = sections.find((s) => s.id === currentSec);
         if (secConfig) {
-          // Smooth glide across the screen to the designated side (Zero off-screen clipping)
           if (secConfig.side === 'left') {
             setDockSide('left');
-            setTiltAngle(-14);
-            setTimeout(() => setTiltAngle(0), 500);
+            setTiltAngle(-12);
+            setTimeout(() => setTiltAngle(0), 450);
           } else {
             setDockSide('right');
-            setTiltAngle(14);
-            setTimeout(() => setTiltAngle(0), 500);
+            setTiltAngle(12);
+            setTimeout(() => setTiltAngle(0), 450);
           }
 
-          // Trigger section speech if cooldown passed (descriptografia visual cyberpunk ao descer a página)
-          const now = Date.now();
-          const lastSpoken = sectionCooldownRef.current[currentSec] || 0;
-          if (now - lastSpoken > 8000 && prevSec !== null) {
-            sectionCooldownRef.current[currentSec] = now;
-            showDecryptingBubble(secConfig.phrase, 8500);
+          // Debounce de áudio: aguarda a rolagem estabilizar para não amontoar múltiplos sons
+          if (scrollDebounceTimerRef.current) {
+            clearTimeout(scrollDebounceTimerRef.current);
           }
+          scrollDebounceTimerRef.current = window.setTimeout(() => {
+            if (isSprintActiveRef.current || dashState !== 'idle') return;
+            const now = Date.now();
+            const lastSpoken = sectionCooldownRef.current[currentSec] || 0;
+            if (now - lastSpoken > 9500 && prevSec !== null) {
+              sectionCooldownRef.current[currentSec] = now;
+              showDecryptingBubble(secConfig.phrase, 5500);
+            }
+          }, 450);
         }
       }
     };
 
     window.addEventListener('scroll', handleScrollWatcher, { passive: true });
-    return () => window.removeEventListener('scroll', handleScrollWatcher);
-  }, [followMouse, isPreparingFollow, showDecryptingBubble]);
+    return () => {
+      window.removeEventListener('scroll', handleScrollWatcher);
+      if (scrollDebounceTimerRef.current) clearTimeout(scrollDebounceTimerRef.current);
+    };
+  }, [followMouse, isPreparingFollow, dashState, showDecryptingBubble]);
 
   // REAÇÃO AO MODO INSPECIONAR / DEVTOOLS (Sabe exatamente o que o usuário está fazendo)
   useEffect(() => {
@@ -421,14 +437,13 @@ export const LuckyAssistant: React.FC = () => {
       lastInspectSpoken = now;
 
       const phrases = [
-        'Eu sei exatamente o que você está fazendo... Achou que eu não ia ver você abrindo o Inspecionar? 👀 Pode auditar, o código é 100% limpo e modular!',
-        'Flagrado no Inspecionar! 🤖🔍 Eu sei o que você está fazendo aí! Fique à vontade para inspecionar os componentes, hooks e testes!',
-        'Opa! Eu sei o que você está fazendo... 🕵️ Abrindo as ferramentas de desenvolvedor? Pode debugar com calma, zero gambiarras!',
-        'Não adianta disfarçar, eu sei o que você está fazendo! 👀 Inspecionando o código do Lucas? Tudo feito com boas práticas e TypeScript puro!',
+        'Eu sei o que você está fazendo aí! 🕵️ Inspecionando o código? 100% limpo e modular!',
+        'Flagrado no Inspecionar! 👀 Fique à vontade para auditar os testes e componentes!',
+        'Inspecionando no DevTools? 🤖 Pode debugar com calma, zero gambiarras!',
       ];
       const text = phrases[Math.floor(Math.random() * phrases.length)];
 
-      showBubble(text, 8500);
+      showBubble(text, 6000);
       playCuteChirpMelody(3);
       setEyeState('scan');
       setTimeout(() => setEyeState('happy'), 1800);
@@ -553,9 +568,17 @@ export const LuckyAssistant: React.FC = () => {
     }, totalWaitTime);
   }, [followMouse, isPreparingFollow, stopFollowing, playCuteChirpMelody, showBubble]);
 
-  // Rotinas de corrida / sumiço do robô: iFood e Duolingo
+  // Rotinas de corrida / sumiço do robô: iFood e Duolingo (com áudio e falas reorganizados e concisos)
   const runIFoodSprint = useCallback(() => {
     if (deathRayState !== 'idle' || followMouse || isDraggingRef.current || dashState !== 'idle') return;
+
+    // Bloqueia qualquer fala ou efeito sonoro de scroll durante toda a corrida
+    isSprintActiveRef.current = true;
+    if (typingTimerRef.current) {
+      clearInterval(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
+    setSpeechBubble(null);
 
     setIsOpen(false);
     setDashType('ifood');
@@ -574,19 +597,27 @@ export const LuckyAssistant: React.FC = () => {
     setTimeout(() => {
       setDashState('idle');
       setEyeState('heart');
-      playCuteChirpMelody(3);
-      showBubble(
-        'Fui correndo receber meu pedido do iFood! 🛵🍔🍕 Chegou quentinho e no prazo! Bateria recarregada, foco total nos projetos!',
-        8500
-      );
+      playCuteChirpMelody(2);
+      // Texto conciso e direto
+      showBubble('Fui correndo pegar meu iFood! 🛵🍔 Bateria recarregada!', 5000);
+
       setTimeout(() => {
         setEyeState((prev) => (prev === 'heart' ? 'normal' : prev));
-      }, 4500);
+        isSprintActiveRef.current = false; // Libera comentários de scroll apenas após a leitura
+      }, 5000);
     }, 2850);
   }, [deathRayState, followMouse, dashState, playCuteChirpMelody, showBubble]);
 
   const runDuolingoSprint = useCallback(() => {
     if (deathRayState !== 'idle' || followMouse || isDraggingRef.current || dashState !== 'idle') return;
+
+    // Bloqueia qualquer fala ou som de scroll
+    isSprintActiveRef.current = true;
+    if (typingTimerRef.current) {
+      clearInterval(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
+    setSpeechBubble(null);
 
     setIsOpen(false);
     setDashType('duolingo');
@@ -605,14 +636,14 @@ export const LuckyAssistant: React.FC = () => {
     setTimeout(() => {
       setDashState('idle');
       setEyeState('star');
-      playCuteChirpMelody(3);
-      showBubble(
-        'Ufa! Fui correndo fazer o Duolingo! 🦉📚 Se eu perco a ofensiva a coruja me caça... Streak de 150 dias garantido!',
-        8500
-      );
+      playCuteChirpMelody(2);
+      // Fala explícita sobre a aula do Duolingo
+      showBubble('Fui fazer minha aula de Duolingo! 🦉📚 Ofensiva salva a tempo!', 5000);
+
       setTimeout(() => {
         setEyeState((prev) => (prev === 'star' ? 'normal' : prev));
-      }, 4500);
+        isSprintActiveRef.current = false; // Libera scroll após a leitura
+      }, 5000);
     }, 2850);
   }, [deathRayState, followMouse, dashState, playCuteChirpMelody, showBubble]);
 
@@ -1348,15 +1379,15 @@ export const LuckyAssistant: React.FC = () => {
           dockSide === 'left' ? 'items-start' : 'items-end'
         }`}
       >
-        {/* SPEECH BUBBLE WITH REAL TYPEWRITER EFFECT & CYPHER DECRYPTOR */}
+        {/* SPEECH BUBBLE COMPACTO COM EFEITO TYPEWRITER E DESCRIPTOGRAFIA */}
         {speechBubble && (
           <div
             onClick={() => setSpeechBubble(null)}
             title="Clique para fechar"
-            className={`mb-2 max-w-[280px] sm:max-w-[320px] bg-[#0c051f]/95 border-2 text-xs font-mono px-3.5 py-2.5 rounded-2xl backdrop-blur-md animate-fadeIn relative cursor-pointer select-none transition-all ${
+            className={`mb-2 max-w-[220px] sm:max-w-[260px] bg-[#0c051f]/95 border text-[11px] sm:text-xs font-mono px-3 py-2 rounded-xl backdrop-blur-md animate-fadeIn relative cursor-pointer select-none transition-all ${
               isDecrypting
-                ? 'border-emerald-400 text-emerald-200 shadow-[0_0_25px_rgba(16,185,129,0.35)]'
-                : 'border-cyan-400 text-cyan-100 shadow-[0_0_25px_rgba(0,240,255,0.35)]'
+                ? 'border-emerald-400 text-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+                : 'border-cyan-400 text-cyan-100 shadow-[0_0_20px_rgba(0,240,255,0.3)]'
             } ${
               dockSide === 'left' ? 'rounded-bl-xs' : 'rounded-br-xs'
             }`}
@@ -1423,7 +1454,7 @@ export const LuckyAssistant: React.FC = () => {
             </div>
 
             {/* Quick 2 Action Buttons: Destruir o cursor + Seguir o Mouse */}
-            <div className="grid grid-cols-2 gap-1.5 mb-2">
+            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
               <button
                 aria-label="Destruir o cursor com feixe laser"
                 onClick={triggerDestroyCursor}
@@ -1456,6 +1487,24 @@ export const LuckyAssistant: React.FC = () => {
                     ? 'Calibrando...'
                     : 'Seguir o Mouse'}
                 </span>
+              </button>
+            </div>
+
+            {/* Quick Interactive Sprints: iFood & Duolingo */}
+            <div className="grid grid-cols-2 gap-1.5 mb-2">
+              <button
+                onClick={runIFoodSprint}
+                disabled={dashState !== 'idle'}
+                className="py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1 bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
+              >
+                <span>🛵 Pegar iFood</span>
+              </button>
+              <button
+                onClick={runDuolingoSprint}
+                disabled={dashState !== 'idle'}
+                className="py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer"
+              >
+                <span>🦉 Fazer Duolingo</span>
               </button>
             </div>
 

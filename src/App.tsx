@@ -35,25 +35,6 @@ export function App() {
     }
   }, []);
 
-  // IntersectionObserver for reveal animations
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-          }
-        });
-      },
-      { threshold: 0.15, rootMargin: '-60px 0px -40% 0px' }
-    );
-
-    const revealElements = document.querySelectorAll('.reveal-on-scroll');
-    revealElements.forEach((el) => observer.observe(el));
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <div className="relative min-h-screen bg-[#04020a] text-slate-100 selection:bg-cyan-500/30 selection:text-white overflow-x-hidden">
       {/* 1. 3D ORBITAL GLOBE */}
@@ -132,7 +113,7 @@ export function App() {
 
         {/* SOBRE MIM */}
         <section id="sobre" className="py-16 px-6 sm:px-12 max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 reveal-on-scroll">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             <div className="md:col-span-7 cyber-card rounded-3xl p-7 sm:p-8 flex flex-col justify-between">
               <div>
                 <CyberDecryptedText
@@ -205,7 +186,7 @@ export function App() {
 
         {/* PROJETOS EM DESTAQUE — BENTO ASSIMÉTRICO COMPACTO */}
         <section id="projetos" className="py-14 px-6 sm:px-12 max-w-5xl mx-auto scroll-mt-20">
-          <div className="mb-8 reveal-on-scroll">
+          <div className="mb-8">
             <CyberDecryptedText
               text="PROJETOS EM DESTAQUE"
               tag="span"
@@ -222,7 +203,7 @@ export function App() {
           </div>
 
           {/* BENTO GRID: FL-XAI (12 cols topo), Gambit (6 cols), GameHunter (6 cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch reveal-on-scroll">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             {/* Card 1: FL-XAI (Maior / Flagship) */}
             <div className="lg:col-span-12">
               <CompactProjectCard
@@ -257,7 +238,7 @@ export function App() {
 
         {/* OUTROS PROJETOS & EXPERIMENTOS (FILEIRA COMPACTA DE CHIPS) */}
         <section className="py-6 px-6 sm:px-12 max-w-5xl mx-auto">
-          <div className="cyber-card rounded-2xl p-5 border border-white/[0.08] reveal-on-scroll space-y-3">
+          <div className="cyber-card rounded-2xl p-5 border border-white/[0.08] space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-semibold">
                 OUTROS PROJETOS & EXPERIMENTOS
@@ -298,7 +279,7 @@ export function App() {
         </section>
 
         {/* ARSENAL TECNOLÓGICO — RESTRIÇÃO INVIOLÁVEL (NÃO ALTERAR NADA) */}
-        <section id="skills" className="py-16 px-6 sm:px-12 max-w-5xl mx-auto reveal-on-scroll scroll-mt-20">
+        <section id="skills" className="py-16 px-6 sm:px-12 max-w-5xl mx-auto scroll-mt-20">
           <div className="mb-8">
             <CyberDecryptedText
               text="ARSENAL TECNOLÓGICO"
@@ -322,7 +303,7 @@ export function App() {
         <TimelineSection />
 
         {/* CONTATO COMPLETO */}
-        <footer id="contato" className="pt-6 pb-20 px-6 sm:px-12 max-w-5xl mx-auto text-center reveal-on-scroll scroll-mt-20">
+        <footer id="contato" className="pt-6 pb-20 px-6 sm:px-12 max-w-5xl mx-auto text-center scroll-mt-20">
           <div className="cyber-card rounded-3xl p-7 sm:p-10 border border-white/[0.08]">
             <CyberDecryptedText
               text="CONTATO & CONEXÃO"

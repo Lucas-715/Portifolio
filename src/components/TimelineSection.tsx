@@ -30,7 +30,7 @@ export const TimelineSection: React.FC = () => {
 
   return (
     <section id="formacao" className="py-16 px-6 sm:px-12 max-w-5xl mx-auto scroll-mt-20">
-      <div className="cyber-card rounded-3xl p-6 sm:p-10 border border-white/[0.08] reveal-on-scroll space-y-8">
+      <div className="cyber-card rounded-3xl p-6 sm:p-10 border border-white/[0.08] space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>

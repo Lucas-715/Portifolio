@@ -3,6 +3,7 @@ import { GLOBE_LAND_DOTS } from '../data/globeDots';
 
 // Key metropolitan hubs for glowing city clusters (lat, lon in radians)
 const CITY_HUBS = [
+  { lat: (-4.9403 * Math.PI) / 180, lon: (-37.9750 * Math.PI) / 180, name: 'Russas' },
   { lat: (-15.79 * Math.PI) / 180, lon: (-47.88 * Math.PI) / 180, name: 'Brasilia' },
   { lat: (-23.55 * Math.PI) / 180, lon: (-46.63 * Math.PI) / 180, name: 'Sao Paulo' },
   { lat: (-3.73 * Math.PI) / 180, lon: (-38.52 * Math.PI) / 180, name: 'Fortaleza' },
@@ -273,11 +274,106 @@ export const GlobeBackground: React.FC = () => {
       }
 
       // =========================================================================
-      // 4. 3D ORBITAL LIGHT TRAJECTORY PATH (OCLUSÃO 3D: PARTE DE TRÁS ESCONDIDA)
+      // 3.5. BEACON DE RUSSAS, CEARÁ (UFC CAMPUS RUSSAS)
       // =========================================================================
-      const orbitRadius = radius * 1.07;
-      const inc = (26 * Math.PI) / 180; // Inclinação da órbita em relação ao observador
-      const roll = (-14 * Math.PI) / 180; // Diagonal no plano da tela
+      // Coordenadas geográficas: 4.9403° S, 37.9750° W
+      const RUSSAS_LAT = (-4.9403 * Math.PI) / 180;
+      const RUSSAS_LON = (-37.9750 * Math.PI) / 180;
+      const rCosLat = Math.cos(RUSSAS_LAT);
+      const rSinLat = Math.sin(RUSSAS_LAT);
+
+      const rx3d = rCosLat * Math.sin(RUSSAS_LON + rotation);
+      const ry3d = rSinLat;
+      const rz3d = rCosLat * Math.cos(RUSSAS_LON + rotation);
+
+      // Visível no hemisfério frontal voltado para o usuário
+      if (rz3d > 0.04) {
+        const rpx = cx + rx3d * radius;
+        const rpy = cy - ry3d * radius;
+        const rAlpha = Math.min(1.0, rz3d * 1.6);
+
+        ctx.save();
+
+        // 1. Ondas de Radar Concêntricas em Expansão
+        for (let p = 0; p < 2; p++) {
+          const pingProgress = (tick * 1.5 + p * 0.5) % 1;
+          const pingR = 3 + pingProgress * 22;
+          const pingOpacity = (1 - pingProgress) * 0.8 * rAlpha;
+
+          ctx.strokeStyle = `rgba(0, 240, 255, ${pingOpacity})`;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(rpx, rpy, pingR, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // 2. Halo radiante de destaque
+        const pinGlow = ctx.createRadialGradient(rpx, rpy, 0, rpx, rpy, 13);
+        pinGlow.addColorStop(0, `rgba(255, 255, 255, ${rAlpha})`);
+        pinGlow.addColorStop(0.35, `rgba(0, 240, 255, ${0.9 * rAlpha})`);
+        pinGlow.addColorStop(0.7, `rgba(168, 85, 247, ${0.4 * rAlpha})`);
+        pinGlow.addColorStop(1, 'rgba(0, 240, 255, 0)');
+        ctx.fillStyle = pinGlow;
+        ctx.beginPath();
+        ctx.arc(rpx, rpy, 13, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Ponto focal sólido
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(rpx, rpy, 2.7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. Tag técnica HUD com linha conectora
+        const elbowX = rpx + 18;
+        const elbowY = rpy - 16;
+        const lineEndX = elbowX + 16;
+
+        ctx.strokeStyle = `rgba(0, 240, 255, ${0.75 * rAlpha})`;
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(rpx, rpy);
+        ctx.lineTo(elbowX, elbowY);
+        ctx.lineTo(lineEndX, elbowY);
+        ctx.stroke();
+
+        // Pill badge
+        const tagW = 84;
+        const tagH = 20;
+        const tagX = lineEndX + 3;
+        const tagY = elbowY - tagH / 2;
+
+        ctx.fillStyle = `rgba(8, 3, 24, ${0.88 * rAlpha})`;
+        ctx.strokeStyle = `rgba(0, 240, 255, ${0.6 * rAlpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(tagX, tagY, tagW, tagH, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        // Ponto indicador no badge
+        ctx.fillStyle = `rgba(0, 240, 255, ${rAlpha})`;
+        ctx.beginPath();
+        ctx.arc(tagX + 8, tagY + tagH / 2, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Texto da marcação
+        ctx.font = '600 9.5px monospace, sans-serif';
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.95 * rAlpha})`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Russas, CE', tagX + 15, tagY + tagH / 2);
+
+        ctx.restore();
+      }
+
+      // =========================================================================
+      // 4. 3D ORBITAL LIGHT TRAJECTORY PATH (OCLUSÃO COMPLETA NA BORDA DO GLOBO)
+      // =========================================================================
+      // Dá a volta completa no espaço ao redor do planeta;
+      // A linha e o pulso só somem no momento exato em que triscarem no disco do globo!
+      const orbitRadius = radius * 1.15;
+      const inc = (28 * Math.PI) / 180; // Inclinação da órbita em relação ao observador
+      const roll = (-12 * Math.PI) / 180; // Diagonal no plano da tela
       const cosInc = Math.cos(inc);
       const sinInc = Math.sin(inc);
       const cosRoll = Math.cos(roll);
@@ -286,7 +382,7 @@ export const GlobeBackground: React.FC = () => {
       const getOrbitCoord = (theta: number) => {
         const ox = Math.cos(theta) * orbitRadius;
         const oy = Math.sin(theta) * orbitRadius * sinInc;
-        const oz = Math.sin(theta) * orbitRadius * cosInc; // oz > 0 = na frente do globo; oz < 0 = atrás do globo
+        const oz = Math.sin(theta) * orbitRadius * cosInc; // oz > 0 = frente; oz < 0 = trás
 
         const rotX = ox * cosRoll - oy * sinRoll;
         const rotY = ox * sinRoll + oy * cosRoll;
@@ -298,78 +394,124 @@ export const GlobeBackground: React.FC = () => {
         };
       };
 
+      // Checa visibilidade: se oz >= 0 (frente do globo), sempre visível.
+      // Se oz < 0 (atrás), visível no espaço aberto (dist >= radius), e some exatamente quando trisca no globo (dist < radius).
+      const checkOrbitVisibility = (coord: { x: number; y: number; oz: number }) => {
+        const d = Math.hypot(coord.x - cx, coord.y - cy);
+        return coord.oz >= -0.5 || d >= radius;
+      };
+
+      // Busca binária rápida para encontrar o ponto exato da borda do globo onde dist == radius
+      const findHorizonEdge = (thA: number, thB: number, targetVis: boolean) => {
+        let t1 = thA;
+        let t2 = thB;
+        for (let iter = 0; iter < 7; iter++) {
+          const tMid = (t1 + t2) / 2;
+          const midPt = getOrbitCoord(tMid);
+          const isMidVis = checkOrbitVisibility(midPt);
+          if (isMidVis === targetVis) {
+            t2 = tMid;
+          } else {
+            t1 = tMid;
+          }
+        }
+        return getOrbitCoord((t1 + t2) / 2);
+      };
+
       ctx.save();
 
-      // (A) DESENHAR APENAS A PARTE DA FRENTE DO ANEL (theta de PI até 0)
-      // A parte de trás (theta de 0 a -PI / oz < 0) fica ATRÁS do globo e NÃO É DESENHADA!
+      // (A) DESENHO DO ANEL ORBITAL
+      const orbitSteps = 300;
+      let drawing = false;
+      let lastVisible: boolean | null = null;
+      let lastTheta = 0;
+
       ctx.beginPath();
-      const orbitSteps = 90;
-      let isFirstPoint = true;
-
       for (let s = 0; s <= orbitSteps; s++) {
-        // Theta varia de PI (borda esquerda) até 0 (borda direita) onde oz >= 0 (frente)
-        const theta = Math.PI - (s / orbitSteps) * Math.PI;
+        const theta = (s / orbitSteps) * Math.PI * 2;
         const pt = getOrbitCoord(theta);
+        const isVis = checkOrbitVisibility(pt);
 
-        if (isFirstPoint) {
-          ctx.moveTo(pt.x, pt.y);
-          isFirstPoint = false;
-        } else {
-          ctx.lineTo(pt.x, pt.y);
+        if (s === 0) {
+          if (isVis) {
+            ctx.moveTo(pt.x, pt.y);
+            drawing = true;
+          }
+          lastVisible = isVis;
+          lastTheta = theta;
+          continue;
         }
+
+        if (lastVisible && !isVis) {
+          // Entrando na oclusão: vai até triscar exatamente na borda do globo
+          const edgePt = findHorizonEdge(lastTheta, theta, false);
+          ctx.lineTo(edgePt.x, edgePt.y);
+          drawing = false;
+        } else if (!lastVisible && isVis) {
+          // Saindo da oclusão: retoma exatamente a partir da borda do globo
+          const edgePt = findHorizonEdge(lastTheta, theta, true);
+          ctx.moveTo(edgePt.x, edgePt.y);
+          ctx.lineTo(pt.x, pt.y);
+          drawing = true;
+        } else if (isVis) {
+          if (!drawing) {
+            ctx.moveTo(pt.x, pt.y);
+            drawing = true;
+          } else {
+            ctx.lineTo(pt.x, pt.y);
+          }
+        }
+
+        lastVisible = isVis;
+        lastTheta = theta;
       }
 
-      // Traço suave do anel na frente do globo
-      const orbitGrad = ctx.createLinearGradient(cx - radius * 0.9, cy, cx + radius * 0.9, cy);
-      orbitGrad.addColorStop(0, 'rgba(168, 85, 247, 0.15)');
-      orbitGrad.addColorStop(0.2, 'rgba(192, 132, 252, 0.45)');
-      orbitGrad.addColorStop(0.5, 'rgba(216, 180, 254, 0.6)');
-      orbitGrad.addColorStop(0.8, 'rgba(192, 132, 252, 0.45)');
-      orbitGrad.addColorStop(1, 'rgba(168, 85, 247, 0.15)');
-
-      ctx.strokeStyle = orbitGrad;
-      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = 'rgba(192, 132, 252, 0.42)';
+      ctx.lineWidth = 1.35;
       ctx.stroke();
 
-      // (B) PULSO LUMINOSO (ESCONDIDO QUANDO ESTIVER ATRÁS DO GLOBO)
-      // O pulso percorre o ciclo completo (0 a 2*PI).
-      // Quando oz < 0 (parte de trás), ele NÃO É DESENHADO!
-      const currentPulseTheta = Math.PI - (orbitProgress * Math.PI * 2);
+      // (B) PULSO LUMINOSO ORBITAL
+      // Percorre os 360° da órbita. Some apenas quando triscar e passar atrás do globo!
+      const currentPulseTheta = (orbitProgress * Math.PI * 2);
       const pulsePt = getOrbitCoord(currentPulseTheta);
+      const isPulseVis = checkOrbitVisibility(pulsePt);
 
-      if (pulsePt.oz >= 0) {
-        // Pulso está na frente do globo: renderizar com brilho e cauda
-        const depthFactor = Math.min(1.0, pulsePt.oz / (orbitRadius * cosInc));
+      if (isPulseVis) {
+        const isBehindInSpace = pulsePt.oz < 0;
+        const depthFactor = isBehindInSpace
+          ? 0.55
+          : Math.min(1.0, 0.35 + 0.65 * (pulsePt.oz / (orbitRadius * cosInc)));
 
-        // Rastro/cauda do pulso
-        const tailCount = 7;
+        // Rastro luminoso do pulso
+        const tailCount = 8;
         for (let t = 1; t <= tailCount; t++) {
-          const tailTheta = currentPulseTheta + t * 0.045;
+          const tailTheta = (currentPulseTheta - t * 0.035 + Math.PI * 2) % (Math.PI * 2);
           const tailPt = getOrbitCoord(tailTheta);
-          if (tailPt.oz >= 0) {
-            const tailAlpha = (1 - t / tailCount) * 0.7 * depthFactor;
+          if (checkOrbitVisibility(tailPt)) {
+            const tailAlpha = (1 - t / tailCount) * (isBehindInSpace ? 0.35 : 0.75) * depthFactor;
             ctx.fillStyle = `rgba(192, 132, 252, ${tailAlpha})`;
             ctx.beginPath();
-            ctx.arc(tailPt.x, tailPt.y, Math.max(0.8, 2.2 - t * 0.25), 0, Math.PI * 2);
+            ctx.arc(tailPt.x, tailPt.y, Math.max(0.7, 2.2 - t * 0.2), 0, Math.PI * 2);
             ctx.fill();
           }
         }
 
         // Brilho radiante do pulso
-        const pulseGlow = ctx.createRadialGradient(pulsePt.x, pulsePt.y, 0, pulsePt.x, pulsePt.y, 16);
+        const flareR = isBehindInSpace ? 11 : 16;
+        const pulseGlow = ctx.createRadialGradient(pulsePt.x, pulsePt.y, 0, pulsePt.x, pulsePt.y, flareR);
         pulseGlow.addColorStop(0, `rgba(255, 255, 255, ${0.95 * depthFactor})`);
         pulseGlow.addColorStop(0.35, `rgba(192, 132, 252, ${0.85 * depthFactor})`);
         pulseGlow.addColorStop(0.7, `rgba(168, 85, 247, ${0.35 * depthFactor})`);
         pulseGlow.addColorStop(1, 'rgba(168, 85, 247, 0)');
         ctx.fillStyle = pulseGlow;
         ctx.beginPath();
-        ctx.arc(pulsePt.x, pulsePt.y, 16, 0, Math.PI * 2);
+        ctx.arc(pulsePt.x, pulsePt.y, flareR, 0, Math.PI * 2);
         ctx.fill();
 
         // Núcleo branco incandescente do pulso
         ctx.fillStyle = `rgba(255, 255, 255, ${depthFactor})`;
         ctx.beginPath();
-        ctx.arc(pulsePt.x, pulsePt.y, 2.6, 0, Math.PI * 2);
+        ctx.arc(pulsePt.x, pulsePt.y, isBehindInSpace ? 1.8 : 2.5, 0, Math.PI * 2);
         ctx.fill();
       }
 

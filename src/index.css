@@ -99,21 +99,17 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* High-Impact Cyberpunk Scroll Transition */
+/* Visibilidade direta dos elementos (sem transição de scroll ou atrasos) */
 .reveal-on-scroll {
-  opacity: 0;
-  transform: translateY(28px) scale(0.985);
-  filter: blur(5px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.6s ease-out;
-  will-change: opacity, transform, filter;
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 
 .reveal-on-scroll.is-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0px);
+  transform: none;
+  filter: none;
 }
 
 /* Screen Shake for Giant Cannon Shot */
