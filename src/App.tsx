@@ -86,34 +86,32 @@ export function App() {
       {/* MAIN CONTENT */}
       <main id="top" className="relative z-10 pt-4">
         {/* HERO SECTION */}
-        <section className="min-h-[85vh] flex flex-col items-center justify-center pt-16 pb-16 px-6 sm:px-12 text-center">
-          <div className="max-w-3xl mx-auto flex flex-col items-center relative">
-            <div className="absolute -inset-10 bg-radial from-[#04020a]/95 via-[#04020a]/80 to-transparent -z-10 blur-2xl pointer-events-none" />
-
+        <section className="min-h-[88vh] flex flex-col items-center justify-center pt-8 pb-14 px-6 sm:px-12 text-center">
+          <div className="max-w-2xl mx-auto flex flex-col items-center relative z-10">
             <CyberDecryptedText
               text="Lucas Almeida"
               tag="h1"
-              delay={150}
-              speed={28}
-              className="font-display text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-cyber-gradient leading-[1.04] drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]"
+              delay={100}
+              speed={24}
+              className="font-display text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-cyber-gradient leading-[1.04] drop-shadow-[0_4px_28px_rgba(0,0,0,0.95)]"
             />
 
             <CyberDecryptedText
               text="Engenharia de Software · Aprendizado Federado · Desenvolvimento Full Stack"
               tag="p"
-              delay={350}
-              speed={20}
-              className="mt-4 text-base sm:text-xl font-medium text-slate-100 drop-shadow-md"
+              delay={280}
+              speed={18}
+              className="mt-3 text-sm sm:text-lg md:text-xl font-medium text-slate-100 tracking-wide drop-shadow-[0_2px_14px_rgba(0,0,0,0.9)] max-w-xl mx-auto"
             />
 
-            <p className="mt-4 max-w-2xl text-xs sm:text-sm text-slate-200 leading-relaxed font-normal drop-shadow-md">
+            <p className="mt-4 max-w-xl text-xs sm:text-sm text-slate-200 leading-relaxed font-normal drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] mx-auto">
               Graduando em <strong className="text-white font-semibold">Engenharia de Software (UFC)</strong> e <strong className="text-white font-semibold">Técnico em Informática (IFMA)</strong>. Projetos acadêmicos e autorais com foco em Aprendizado Federado (FL), explicabilidade de modelos (XAI) e prototipação de sistemas com LLMs.
             </p>
 
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-4">
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-3.5">
               <a
                 href="#projetos"
-                className="btn-cyber-primary px-6 py-2.5 rounded-full text-xs sm:text-sm flex items-center gap-2 font-mono font-bold"
+                className="btn-cyber-primary px-6 py-2.5 rounded-full text-xs sm:text-sm flex items-center gap-2 font-mono font-bold cursor-pointer"
               >
                 <span>Explorar Projetos</span>
                 <ArrowUpRight className="w-4 h-4" />
@@ -123,7 +121,7 @@ export function App() {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-contact-link="true"
-                className="btn-cyber-ghost px-6 py-2.5 rounded-full text-xs sm:text-sm flex items-center gap-2 font-mono"
+                className="btn-cyber-ghost px-6 py-2.5 rounded-full text-xs sm:text-sm flex items-center gap-2 font-mono cursor-pointer"
               >
                 <Github className="w-4 h-4" />
                 <span>github.com/Lucas-715</span>

@@ -105,10 +105,11 @@ export const CyberDecryptedText: React.FC<CyberDecryptedTextProps> = ({
     <Tag
       ref={containerRef}
       className={`${className} ${
-        isDecrypting ? 'text-cyan-300 drop-shadow-[0_0_12px_rgba(0,240,255,0.6)] font-mono' : ''
+        isDecrypting ? 'text-cyan-300 drop-shadow-[0_0_14px_rgba(0,240,255,0.7)]' : ''
       } transition-colors duration-200`}
     >
       {displayText}
     </Tag>
   );
 };
+
