@@ -195,8 +195,8 @@ export const LuckyAssistant: React.FC = () => {
     }
   }, [soundEnabled]);
 
-  // Speech bubble with typewriter effect and click sounds
-  const showBubble = useCallback((text: string, duration = 3200) => {
+  // Speech bubble with typewriter effect and click sounds (duração estendida para leitura confortável)
+  const showBubble = useCallback((text: string, duration = 5500) => {
     if (typingTimerRef.current) {
       clearInterval(typingTimerRef.current);
     }
@@ -216,9 +216,13 @@ export const LuckyAssistant: React.FC = () => {
     }, 24);
     typingTimerRef.current = interval as unknown as number;
 
+    // Garante tempo de leitura suficiente: digitação + base de 3.5s + 40ms por caractere
+    const typingDuration = (text.length / 2) * 24;
+    const comfortableReadingDuration = Math.max(duration, typingDuration + 3500 + text.length * 40);
+
     setTimeout(() => {
       setSpeechBubble((current) => (current === text ? null : current));
-    }, duration);
+    }, comfortableReadingDuration);
   }, [playTypewriterClick]);
 
   // Blinking & scanning loops
@@ -999,7 +1003,9 @@ export const LuckyAssistant: React.FC = () => {
         {/* SPEECH BUBBLE WITH REAL TYPEWRITER EFFECT */}
         {speechBubble && (
           <div
-            className={`mb-2 max-w-[280px] sm:max-w-[320px] bg-[#0c051f]/95 border-2 border-cyan-400 text-cyan-100 text-xs font-mono px-3.5 py-2.5 rounded-2xl shadow-[0_0_25px_rgba(0,240,255,0.35)] backdrop-blur-md animate-fadeIn relative ${
+            onClick={() => setSpeechBubble(null)}
+            title="Clique para fechar"
+            className={`mb-2 max-w-[280px] sm:max-w-[320px] bg-[#0c051f]/95 border-2 border-cyan-400 text-cyan-100 text-xs font-mono px-3.5 py-2.5 rounded-2xl shadow-[0_0_25px_rgba(0,240,255,0.35)] backdrop-blur-md animate-fadeIn relative cursor-pointer select-none ${
               dockSide === 'left' ? 'rounded-bl-xs' : 'rounded-br-xs'
             }`}
           >

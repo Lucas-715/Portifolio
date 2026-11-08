@@ -45,3 +45,4 @@ npm run build
 - **GitHub**: [github.com/Lucas-715](https://github.com/Lucas-715)
 - **LinkedIn**: [linkedin.com/in/lucas-almeida-5433a0330](https://www.linkedin.com/in/lucas-almeida-5433a0330)
 - **E-mail**: [lucas.s.almeida715@gmail.com](mailto:lucas.s.almeida715@gmail.com)
+

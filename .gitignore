@@ -6,11 +6,6 @@ node_modules/
 # Production build outputs
 dist/
 dist-ssr/
-portfolio/dist/
-
-# Scratch & temporary videos
-.references/
-*.mp4
 
 # Environment & local files
 .env

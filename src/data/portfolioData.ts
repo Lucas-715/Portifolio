@@ -475,41 +475,6 @@ export const TIMELINE_ITEMS: TimelineItem[] = [
   },
 ];
 
-export const ACADEMIC_EXPERIENCE = [
-  {
-    org: 'Universidade Federal do Ceará (UFC)',
-    role: 'Graduação em Engenharia de Software',
-    period: '2023 – Atual · Conclusão prevista: dez/2027',
-    description:
-      'Disciplinas: Algoritmos e Estruturas de Dados, Arquitetura de Software, Bancos de Dados, Testes e Qualidade de Software, Inteligência Artificial.',
-    badge: 'UFC Campus Russas · Bacharelado',
-  },
-  {
-    org: 'Instituto Federal do Maranhão (IFMA)',
-    role: 'Técnico em Informática (Concluído)',
-    period: 'Concluído',
-    description:
-      'Disciplinas: Fundamentos de Redes de Computadores, Sistemas Gerenciadores de Banco de Dados (SGBD) e Programação Orientada a Objetos (POO).',
-    badge: 'IFMA · Técnico Integrado',
-  },
-  {
-    org: 'NERDS — Universidade Federal do Ceará',
-    role: 'Projeto acadêmico',
-    period: 'Projeto Acadêmico',
-    description:
-      'Atuação prática com Vue.js 3 em reengenharia de sistemas, refatoração de código legado e modularização de componentes.',
-    badge: 'Vue.js 3 · Reengenharia de Software',
-  },
-  {
-    org: 'APROVA — Universidade Federal do Ceará',
-    role: 'Projeto de apoio ao ensino',
-    period: 'Projeto Acadêmico',
-    description:
-      'Apoio a estudantes na resolução de problemas quantitativos e lógicos, exercitando síntese técnica, didática e clareza conceitual.',
-    badge: 'Didática · Resolução de Problemas',
-  },
-];
-
 export const CONTACT_INFO = {
   name: 'Lucas de Souza Almeida',
   role: 'Software Engineer & AI Researcher',
