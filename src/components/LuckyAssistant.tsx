@@ -22,6 +22,15 @@ const QUICK_LINKS: QuickLink[] = [
   { id: 'contato', label: 'Contato', icon: '📬', speech: 'Bora conversar? Canais abertos!' },
 ];
 
+const SECTIONS_CONFIG = [
+  { id: 'top', side: 'right', phrase: 'E aí! Sou o Lucky. Role para explorar!' },
+  { id: 'sobre', side: 'left', phrase: 'Engenharia, boas práticas e IA prática.' },
+  { id: 'projetos', side: 'right', phrase: 'Projetos em IA, Aprendizado Federado e XAI!' },
+  { id: 'skills', side: 'left', phrase: 'Stack: PyTorch, Next.js, FastAPI e Docker.' },
+  { id: 'formacao', side: 'right', phrase: 'Formação: IFMA, Engenharia na UFC e extensão!' },
+  { id: 'contato', side: 'right', phrase: 'Bora conversar? Canais abertos!' },
+];
+
 const COMPLAINT_PHRASES = [
   'Ei! Não me puxa assim!',
   'Ai ai ai! Solta meu chassi!',
@@ -82,6 +91,7 @@ export const LuckyAssistant: React.FC = () => {
   const prepareFollowTimeoutRef = useRef<number | null>(null);
   const scrollDebounceTimerRef = useRef<number | null>(null);
   const isSprintActiveRef = useRef<boolean>(false);
+  const pendingScrollSectionRef = useRef<string | null>(null);
   const lastClickTimeRef = useRef<number>(0);
 
   // Audio Context initialization
@@ -274,13 +284,13 @@ export const LuckyAssistant: React.FC = () => {
       const totalLen = targetText.length;
       let progress = 0;
       let frame = 0;
-      const initialScrambleFrames = 6;
+      const initialScrambleFrames = 12;
 
       const interval = setInterval(() => {
         frame++;
 
         if (frame <= initialScrambleFrames) {
-          // Fase 1: Cifra 100% criptografada aleatória
+          // Fase 1: Cifra 100% criptografada aleatória (suspense estendido)
           let scrambled = '';
           const maxGlyphs = Math.min(totalLen, 48);
           for (let i = 0; i < maxGlyphs; i++) {
@@ -289,8 +299,8 @@ export const LuckyAssistant: React.FC = () => {
           setDisplayedSpeech(scrambled);
           playTypewriterClick();
         } else {
-          // Fase 2: Descriptografia progressiva caractere a caractere
-          progress += 3;
+          // Fase 2: Descriptografia progressiva caractere a caractere (ritmo cinematográfico)
+          progress += 1;
           if (progress >= totalLen) {
             setDisplayedSpeech(targetText);
             setIsDecrypting(false);
@@ -318,7 +328,7 @@ export const LuckyAssistant: React.FC = () => {
             playTypewriterClick();
           }
         }
-      }, 28);
+      }, 35);
 
       typingTimerRef.current = interval as unknown as number;
     },
@@ -345,79 +355,112 @@ export const LuckyAssistant: React.FC = () => {
     };
   }, [deathRayState, eyeState]);
 
+  // Helper para identificar a seção visível atual na viewport
+  const getActiveSectionId = useCallback(() => {
+    if (typeof window === 'undefined') return 'top';
+    const scrollY = window.scrollY;
+    const viewportHeight = window.innerHeight;
+    const docHeight = document.documentElement.scrollHeight;
+
+    if (scrollY + viewportHeight >= docHeight - 120) return 'contato';
+    if (scrollY < 240) return 'top';
+
+    for (let i = SECTIONS_CONFIG.length - 1; i >= 0; i--) {
+      const el = document.getElementById(SECTIONS_CONFIG[i].id);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= viewportHeight * 0.45 && rect.bottom >= viewportHeight * 0.15) {
+          return SECTIONS_CONFIG[i].id;
+        }
+      }
+    }
+    return 'top';
+  }, []);
+
+  // Callback de conclusão de ações prioritárias (iFood, Duolingo, etc.):
+  // "a prioridade é a primeira ação, ela deve ser concluida e se a outra tiver como ai continua, caso contrario só pula"
+  const handleActionFinished = useCallback(() => {
+    isSprintActiveRef.current = false;
+
+    const pendingSec = pendingScrollSectionRef.current;
+    pendingScrollSectionRef.current = null;
+
+    if (pendingSec && pendingSec !== 'top') {
+      const currentNow = getActiveSectionId();
+      // Verifica se o usuário AINDA ESTÁ na mesma seção que rolou enquanto o robô estava ocupado
+      if (currentNow === pendingSec) {
+        const secConfig = SECTIONS_CONFIG.find((s) => s.id === currentNow);
+        const now = Date.now();
+        const lastSpoken = sectionCooldownRef.current[currentNow] || 0;
+
+        if (now - lastSpoken > 8500 && secConfig) {
+          // "se a outra tiver como aí continua": aguarda 1.2s para leitura e comenta
+          setTimeout(() => {
+            if (!isSprintActiveRef.current && dashState === 'idle') {
+              sectionCooldownRef.current[currentNow] = Date.now();
+              showDecryptingBubble(secConfig.phrase, 5500);
+            }
+          }, 1200);
+          return;
+        }
+      }
+      // "caso contrário só pula": se o usuário já mudou de seção ou rolou rapidamente, simplesmente pula
+    }
+  }, [getActiveSectionId, dashState, showDecryptingBubble]);
+
   // SCROLL-AWARE SIDE-SWITCHING & IMMERSIVE COMMENTARY
   const lastSectionRef = useRef<string | null>(null);
   const sectionCooldownRef = useRef<{ [key: string]: number }>({});
 
   useEffect(() => {
     const handleScrollWatcher = () => {
-      // Bloqueia comentários de scroll se estiver seguindo o mouse, arrastando ou se o robô estiver na corrida do iFood/Duolingo
-      if (followMouse || isDraggingRef.current || dashState !== 'idle' || isSprintActiveRef.current) return;
+      const currentSec = getActiveSectionId();
+      const secConfig = SECTIONS_CONFIG.find((s) => s.id === currentSec);
 
-      const scrollY = window.scrollY;
-      const viewportHeight = window.innerHeight;
-      const docHeight = document.documentElement.scrollHeight;
-
-      // Textos concisos e diretos para o chatbot
-      const sections = [
-        { id: 'top', side: 'right', phrase: 'E aí! Sou o Lucky. Role para explorar!' },
-        { id: 'sobre', side: 'left', phrase: 'Engenharia, boas práticas e IA prática.' },
-        { id: 'projetos', side: 'right', phrase: 'Projetos em IA, Aprendizado Federado e XAI!' },
-        { id: 'skills', side: 'left', phrase: 'Stack: PyTorch, Next.js, FastAPI e Docker.' },
-        { id: 'formacao', side: 'right', phrase: 'Formação: IFMA, Engenharia na UFC e extensão!' },
-        { id: 'contato', side: 'right', phrase: 'Bora conversar? Canais abertos!' },
-      ];
-
-      let currentSec = 'top';
-
-      if (scrollY + viewportHeight >= docHeight - 120) {
-        currentSec = 'contato';
-      } else if (scrollY < 240) {
-        currentSec = 'top';
-      } else {
-        for (let i = sections.length - 1; i >= 0; i--) {
-          const el = document.getElementById(sections[i].id);
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            if (rect.top <= viewportHeight * 0.45 && rect.bottom >= viewportHeight * 0.15) {
-              currentSec = sections[i].id;
-              break;
-            }
-          }
-        }
-      }
-
-      if (currentSec !== lastSectionRef.current) {
-        const prevSec = lastSectionRef.current;
+      // Ajusta o lado do robô suavemente para acompanhar a leitura
+      if (secConfig && currentSec !== lastSectionRef.current) {
         lastSectionRef.current = currentSec;
 
-        const secConfig = sections.find((s) => s.id === currentSec);
-        if (secConfig) {
-          if (secConfig.side === 'left') {
-            setDockSide('left');
-            setTiltAngle(-12);
-            setTimeout(() => setTiltAngle(0), 450);
-          } else {
-            setDockSide('right');
-            setTiltAngle(12);
-            setTimeout(() => setTiltAngle(0), 450);
-          }
-
-          // Debounce de áudio: aguarda a rolagem estabilizar para não amontoar múltiplos sons
-          if (scrollDebounceTimerRef.current) {
-            clearTimeout(scrollDebounceTimerRef.current);
-          }
-          scrollDebounceTimerRef.current = window.setTimeout(() => {
-            if (isSprintActiveRef.current || dashState !== 'idle') return;
-            const now = Date.now();
-            const lastSpoken = sectionCooldownRef.current[currentSec] || 0;
-            if (now - lastSpoken > 9500 && prevSec !== null) {
-              sectionCooldownRef.current[currentSec] = now;
-              showDecryptingBubble(secConfig.phrase, 5500);
-            }
-          }, 450);
+        if (secConfig.side === 'left') {
+          setDockSide('left');
+          setTiltAngle(-12);
+          setTimeout(() => setTiltAngle(0), 450);
+        } else {
+          setDockSide('right');
+          setTiltAngle(12);
+          setTimeout(() => setTiltAngle(0), 450);
         }
       }
+
+      // REGRA DE PRIORIDADE:
+      // Se o robô já estiver executando uma ação (iFood, Duolingo, modo drone, etc.):
+      // A primeira ação é prioridade absoluta e NUNCA é interrompida!
+      const isBusy =
+        followMouse ||
+        isDraggingRef.current ||
+        dashState !== 'idle' ||
+        isSprintActiveRef.current ||
+        deathRayState !== 'idle';
+
+      if (isBusy) {
+        // Armazena a seção rolada para avaliar quando a primeira ação terminar
+        pendingScrollSectionRef.current = currentSec;
+        return;
+      }
+
+      // Robô livre: agenda o comentário com debounce
+      if (scrollDebounceTimerRef.current) {
+        clearTimeout(scrollDebounceTimerRef.current);
+      }
+      scrollDebounceTimerRef.current = window.setTimeout(() => {
+        if (isSprintActiveRef.current || dashState !== 'idle') return;
+        const now = Date.now();
+        const lastSpoken = sectionCooldownRef.current[currentSec] || 0;
+        if (now - lastSpoken > 9500 && currentSec !== 'top' && secConfig) {
+          sectionCooldownRef.current[currentSec] = now;
+          showDecryptingBubble(secConfig.phrase, 5500);
+        }
+      }, 450);
     };
 
     window.addEventListener('scroll', handleScrollWatcher, { passive: true });
@@ -425,7 +468,7 @@ export const LuckyAssistant: React.FC = () => {
       window.removeEventListener('scroll', handleScrollWatcher);
       if (scrollDebounceTimerRef.current) clearTimeout(scrollDebounceTimerRef.current);
     };
-  }, [followMouse, isPreparingFollow, dashState, showDecryptingBubble]);
+  }, [followMouse, isPreparingFollow, dashState, getActiveSectionId, showDecryptingBubble]);
 
   // REAÇÃO AO MODO INSPECIONAR / DEVTOOLS (Sabe exatamente o que o usuário está fazendo)
   useEffect(() => {
@@ -603,10 +646,10 @@ export const LuckyAssistant: React.FC = () => {
 
       setTimeout(() => {
         setEyeState((prev) => (prev === 'heart' ? 'normal' : prev));
-        isSprintActiveRef.current = false; // Libera comentários de scroll apenas após a leitura
+        handleActionFinished(); // Conclui e avalia se continua ou pula a seção rolada
       }, 5000);
     }, 2850);
-  }, [deathRayState, followMouse, dashState, playCuteChirpMelody, showBubble]);
+  }, [deathRayState, followMouse, dashState, playCuteChirpMelody, showBubble, handleActionFinished]);
 
   const runDuolingoSprint = useCallback(() => {
     if (deathRayState !== 'idle' || followMouse || isDraggingRef.current || dashState !== 'idle') return;
@@ -642,10 +685,10 @@ export const LuckyAssistant: React.FC = () => {
 
       setTimeout(() => {
         setEyeState((prev) => (prev === 'star' ? 'normal' : prev));
-        isSprintActiveRef.current = false; // Libera scroll após a leitura
+        handleActionFinished(); // Conclui e avalia se continua ou pula a seção rolada
       }, 5000);
     }, 2850);
-  }, [deathRayState, followMouse, dashState, playCuteChirpMelody, showBubble]);
+  }, [deathRayState, followMouse, dashState, playCuteChirpMelody, showBubble, handleActionFinished]);
 
   // Expor no window para debug/teste rápido se necessário
   useEffect(() => {
@@ -676,6 +719,23 @@ export const LuckyAssistant: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [deathRayState, followMouse, isPreparingFollow, dashState, isOpen, runIFoodSprint, runDuolingoSprint]);
+
+  // Reação ao Bat-Sinal (Easter Egg do Batman)
+  useEffect(() => {
+    const handleBatSignal = () => {
+      if (dashState !== 'idle' || isSprintActiveRef.current) return;
+
+      setEyeState('star');
+      playCuteChirpMelody(2);
+      showBubble('O Bat-Sinal foi aceso! 🦇 O Cavaleiro das Trevas vigia este código!', 6000);
+      setTimeout(() => {
+        setEyeState((prev) => (prev === 'star' ? 'normal' : prev));
+      }, 6000);
+    };
+
+    window.addEventListener('batman:signal', handleBatSignal);
+    return () => window.removeEventListener('batman:signal', handleBatSignal);
+  }, [dashState, playCuteChirpMelody, showBubble]);
 
   // Reação ao passar o mouse sobre botões/links de contato: Lucky faz carinha fofa com corações (♥) ou estrelas (★)
   useEffect(() => {

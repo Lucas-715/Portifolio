@@ -16,9 +16,9 @@ export const CyberDecryptedText: React.FC<CyberDecryptedTextProps> = ({
   text,
   tag = 'span',
   className = '',
-  speed = 26,
-  delay = 100,
-  scrambleLoops = 6,
+  speed = 40,
+  delay = 140,
+  scrambleLoops = 14,
   triggerOnScroll = true,
 }) => {
   const [displayText, setDisplayText] = useState<string>(text);
@@ -44,7 +44,7 @@ export const CyberDecryptedText: React.FC<CyberDecryptedTextProps> = ({
           frame++;
 
           if (frame < scrambleLoops) {
-            // Initial cyber scramble
+            // Fase 1: Cifra cyberpunk aleatória intensa
             let scrambled = '';
             for (let i = 0; i < totalLen; i++) {
               if (text[i] === ' ' || text[i] === '\n') {
@@ -55,8 +55,8 @@ export const CyberDecryptedText: React.FC<CyberDecryptedTextProps> = ({
             }
             setDisplayText(scrambled);
           } else {
-            // Progressive reveal from left to right
-            revealedChars += 2;
+            // Fase 2: Descriptografia progressiva caractere a caractere (ritmo cinematográfico)
+            revealedChars += 1;
             if (revealedChars >= totalLen) {
               setDisplayText(text);
               setIsDecrypting(false);

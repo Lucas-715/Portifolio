@@ -14,6 +14,7 @@ import { CompactProjectCard } from './components/CompactProjectCard';
 import { ProjectDetailsDrawer } from './components/ProjectDetailsDrawer';
 import { TimelineSection } from './components/TimelineSection';
 import { CyberDecryptedText } from './components/CyberDecryptedText';
+import { BatmanEasterEgg } from './components/BatmanEasterEgg';
 import {
   MAIN_PROJECTS,
   OTHER_PROJECTS,
@@ -303,8 +304,9 @@ export function App() {
         <TimelineSection />
 
         {/* CONTATO COMPLETO */}
-        <footer id="contato" className="pt-6 pb-20 px-6 sm:px-12 max-w-5xl mx-auto text-center scroll-mt-20">
-          <div className="cyber-card rounded-3xl p-7 sm:p-10 border border-white/[0.08]">
+        <footer id="contato" className="pt-6 pb-20 px-6 sm:px-12 max-w-5xl mx-auto text-center scroll-mt-20 relative">
+          <div className="cyber-card rounded-3xl p-7 sm:p-10 border border-white/[0.08] relative">
+            <BatmanEasterEgg />
             <CyberDecryptedText
               text="CONTATO & CONEXÃO"
               tag="span"
