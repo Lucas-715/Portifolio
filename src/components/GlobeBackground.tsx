@@ -273,72 +273,106 @@ export const GlobeBackground: React.FC = () => {
       }
 
       // =========================================================================
-      // 4. 3D ORBITAL LIGHT TRAJECTORY PATH (AS SEEN IN VIDEO)
+      // 4. 3D ORBITAL LIGHT TRAJECTORY PATH (OCLUSÃO 3D: PARTE DE TRÁS ESCONDIDA)
       // =========================================================================
-      // Smooth 3D elliptical orbit trajectory looping across the globe
-      const orbitTilt = (-15 * Math.PI) / 180;
-      const cosTilt = Math.cos(orbitTilt);
-      const sinTilt = Math.sin(orbitTilt);
-      const orbitA = radius * 1.1; // semi-major
-      const orbitB = radius * 0.38; // semi-minor
+      const orbitRadius = radius * 1.07;
+      const inc = (26 * Math.PI) / 180; // Inclinação da órbita em relação ao observador
+      const roll = (-14 * Math.PI) / 180; // Diagonal no plano da tela
+      const cosInc = Math.cos(inc);
+      const sinInc = Math.sin(inc);
+      const cosRoll = Math.cos(roll);
+      const sinRoll = Math.sin(roll);
+
+      const getOrbitCoord = (theta: number) => {
+        const ox = Math.cos(theta) * orbitRadius;
+        const oy = Math.sin(theta) * orbitRadius * sinInc;
+        const oz = Math.sin(theta) * orbitRadius * cosInc; // oz > 0 = na frente do globo; oz < 0 = atrás do globo
+
+        const rotX = ox * cosRoll - oy * sinRoll;
+        const rotY = ox * sinRoll + oy * cosRoll;
+
+        return {
+          x: cx + rotX,
+          y: cy + rotY,
+          oz,
+        };
+      };
 
       ctx.save();
-      // Draw faint glass-like orbital path
+
+      // (A) DESENHAR APENAS A PARTE DA FRENTE DO ANEL (theta de PI até 0)
+      // A parte de trás (theta de 0 a -PI / oz < 0) fica ATRÁS do globo e NÃO É DESENHADA!
       ctx.beginPath();
-      const steps = 72;
-      for (let s = 0; s <= steps; s++) {
-        const theta = (s / steps) * Math.PI * 2;
-        const ox = Math.cos(theta) * orbitA;
-        const oy = Math.sin(theta) * orbitB;
-        const oz = -Math.sin(theta) * radius * 0.4;
+      const orbitSteps = 90;
+      let isFirstPoint = true;
 
-        // Apply tilt
-        const rotX = ox * cosTilt - oy * sinTilt;
-        const rotY = ox * sinTilt + oy * cosTilt;
+      for (let s = 0; s <= orbitSteps; s++) {
+        // Theta varia de PI (borda esquerda) até 0 (borda direita) onde oz >= 0 (frente)
+        const theta = Math.PI - (s / orbitSteps) * Math.PI;
+        const pt = getOrbitCoord(theta);
 
-        const screenX = cx + rotX;
-        const screenY = cy + rotY;
-
-        if (s === 0) {
-          ctx.moveTo(screenX, screenY);
+        if (isFirstPoint) {
+          ctx.moveTo(pt.x, pt.y);
+          isFirstPoint = false;
         } else {
-          ctx.lineTo(screenX, screenY);
+          ctx.lineTo(pt.x, pt.y);
         }
       }
-      ctx.strokeStyle = 'rgba(192, 132, 252, 0.22)';
-      ctx.lineWidth = 1.2;
+
+      // Traço suave do anel na frente do globo
+      const orbitGrad = ctx.createLinearGradient(cx - radius * 0.9, cy, cx + radius * 0.9, cy);
+      orbitGrad.addColorStop(0, 'rgba(168, 85, 247, 0.15)');
+      orbitGrad.addColorStop(0.2, 'rgba(192, 132, 252, 0.45)');
+      orbitGrad.addColorStop(0.5, 'rgba(216, 180, 254, 0.6)');
+      orbitGrad.addColorStop(0.8, 'rgba(192, 132, 252, 0.45)');
+      orbitGrad.addColorStop(1, 'rgba(168, 85, 247, 0.15)');
+
+      ctx.strokeStyle = orbitGrad;
+      ctx.lineWidth = 1.4;
       ctx.stroke();
 
-      // Travelling data pulse along the orbit
-      const pulseTheta = orbitProgress * Math.PI * 2;
-      const pox = Math.cos(pulseTheta) * orbitA;
-      const poy = Math.sin(pulseTheta) * orbitB;
-      const poz = -Math.sin(pulseTheta) * radius * 0.4;
+      // (B) PULSO LUMINOSO (ESCONDIDO QUANDO ESTIVER ATRÁS DO GLOBO)
+      // O pulso percorre o ciclo completo (0 a 2*PI).
+      // Quando oz < 0 (parte de trás), ele NÃO É DESENHADO!
+      const currentPulseTheta = Math.PI - (orbitProgress * Math.PI * 2);
+      const pulsePt = getOrbitCoord(currentPulseTheta);
 
-      const protX = pox * cosTilt - poy * sinTilt;
-      const protY = pox * sinTilt + poy * cosTilt;
+      if (pulsePt.oz >= 0) {
+        // Pulso está na frente do globo: renderizar com brilho e cauda
+        const depthFactor = Math.min(1.0, pulsePt.oz / (orbitRadius * cosInc));
 
-      const pulseX = cx + protX;
-      const pulseY = cy + protY;
+        // Rastro/cauda do pulso
+        const tailCount = 7;
+        for (let t = 1; t <= tailCount; t++) {
+          const tailTheta = currentPulseTheta + t * 0.045;
+          const tailPt = getOrbitCoord(tailTheta);
+          if (tailPt.oz >= 0) {
+            const tailAlpha = (1 - t / tailCount) * 0.7 * depthFactor;
+            ctx.fillStyle = `rgba(192, 132, 252, ${tailAlpha})`;
+            ctx.beginPath();
+            ctx.arc(tailPt.x, tailPt.y, Math.max(0.8, 2.2 - t * 0.25), 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
 
-      // Only draw with full brilliance when on the front hemisphere
-      const pulseAlpha = poz > -radius * 0.2 ? 1 : 0.3;
+        // Brilho radiante do pulso
+        const pulseGlow = ctx.createRadialGradient(pulsePt.x, pulsePt.y, 0, pulsePt.x, pulsePt.y, 16);
+        pulseGlow.addColorStop(0, `rgba(255, 255, 255, ${0.95 * depthFactor})`);
+        pulseGlow.addColorStop(0.35, `rgba(192, 132, 252, ${0.85 * depthFactor})`);
+        pulseGlow.addColorStop(0.7, `rgba(168, 85, 247, ${0.35 * depthFactor})`);
+        pulseGlow.addColorStop(1, 'rgba(168, 85, 247, 0)');
+        ctx.fillStyle = pulseGlow;
+        ctx.beginPath();
+        ctx.arc(pulsePt.x, pulsePt.y, 16, 0, Math.PI * 2);
+        ctx.fill();
 
-      // Radiant pulse flare
-      const pulseGlow = ctx.createRadialGradient(pulseX, pulseY, 0, pulseX, pulseY, 14);
-      pulseGlow.addColorStop(0, `rgba(255, 255, 255, ${pulseAlpha})`);
-      pulseGlow.addColorStop(0.4, `rgba(168, 85, 247, ${pulseAlpha * 0.8})`);
-      pulseGlow.addColorStop(1, 'rgba(168, 85, 247, 0)');
-      ctx.fillStyle = pulseGlow;
-      ctx.beginPath();
-      ctx.arc(pulseX, pulseY, 14, 0, Math.PI * 2);
-      ctx.fill();
+        // Núcleo branco incandescente do pulso
+        ctx.fillStyle = `rgba(255, 255, 255, ${depthFactor})`;
+        ctx.beginPath();
+        ctx.arc(pulsePt.x, pulsePt.y, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
-      // White focal particle
-      ctx.fillStyle = `rgba(255, 255, 255, ${pulseAlpha})`;
-      ctx.beginPath();
-      ctx.arc(pulseX, pulseY, 2.4, 0, Math.PI * 2);
-      ctx.fill();
       ctx.restore();
 
       // =========================================================================
