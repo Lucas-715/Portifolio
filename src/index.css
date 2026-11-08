@@ -7,6 +7,23 @@
     background-color: #04020a;
     color: #f1f5f9;
     font-family: 'Plus Jakarta Sans', sans-serif;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Cybernetic subtle ambient mesh background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background-image: 
+      radial-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+      radial-gradient(rgba(189, 0, 255, 0.03) 1px, transparent 1px);
+    background-size: 36px 36px;
+    background-position: 0 0, 18px 18px;
+    opacity: 0.85;
   }
 
   /* Cyberpunk Minimal Scrollbar */
@@ -17,30 +34,31 @@
     background: #04020a;
   }
   ::-webkit-scrollbar-thumb {
-    background: #1e1338;
+    background: linear-gradient(180deg, #1e1338 0%, #00f0ff 100%);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: #00f0ff;
+    box-shadow: 0 0 10px #00f0ff;
   }
 }
 
 /* Cyberpunk Minimalist Obsidian Card with Content Containment for 120 FPS Scroll */
 .cyber-card {
-  background: rgba(10, 6, 20, 0.78);
+  background: rgba(10, 6, 20, 0.82);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.85);
   contain: content;
   transform: translateZ(0);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  transition: border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cyber-card:hover {
-  border-color: rgba(0, 240, 255, 0.45);
-  box-shadow: 0 0 35px rgba(0, 240, 255, 0.12), inset 0 0 20px rgba(189, 0, 255, 0.05);
-  transform: translateY(-2px);
+  border-color: rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 35px rgba(0, 240, 255, 0.16), inset 0 0 25px rgba(189, 0, 255, 0.06);
+  transform: translateY(-3px) scale(1.002);
 }
 
 /* Cyberpunk Pill Buttons */
@@ -49,12 +67,12 @@
   color: #04020a;
   font-weight: 700;
   box-shadow: 0 0 25px rgba(0, 240, 255, 0.45);
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-cyber-primary:hover {
-  box-shadow: 0 0 38px rgba(0, 240, 255, 0.75), 0 0 20px rgba(189, 0, 255, 0.5);
-  transform: translateY(-2px);
+  box-shadow: 0 0 38px rgba(0, 240, 255, 0.8), 0 0 25px rgba(189, 0, 255, 0.55);
+  transform: translateY(-2px) scale(1.02);
   color: #ffffff;
 }
 
@@ -63,15 +81,15 @@
   color: #f1f5f9;
   border: 1px solid rgba(0, 240, 255, 0.25);
   backdrop-filter: blur(12px);
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-cyber-ghost:hover {
-  background: rgba(0, 240, 255, 0.1);
-  border-color: rgba(0, 240, 255, 0.6);
+  background: rgba(0, 240, 255, 0.12);
+  border-color: rgba(0, 240, 255, 0.65);
   color: #00f0ff;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
-  transform: translateY(-2px);
+  box-shadow: 0 0 22px rgba(0, 240, 255, 0.3);
+  transform: translateY(-2px) scale(1.02);
 }
 
 /* Hero Gradient */
@@ -81,16 +99,21 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* Scroll Animation Utilities */
+/* High-Impact Cyberpunk Scroll Transition */
 .reveal-on-scroll {
   opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.45s ease-out, transform 0.45s ease-out;
+  transform: translateY(28px) scale(0.985);
+  filter: blur(5px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.6s ease-out;
+  will-change: opacity, transform, filter;
 }
 
 .reveal-on-scroll.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
 }
 
 /* Screen Shake for Giant Cannon Shot */
@@ -141,6 +164,7 @@
   .reveal-on-scroll {
     opacity: 1 !important;
     transform: none !important;
+    filter: none !important;
     transition: none !important;
   }
 

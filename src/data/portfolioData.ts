@@ -334,6 +334,12 @@ export const OTHER_PROJECTS = [
   },
 ];
 
+export interface TimelineLink {
+  label: string;
+  url: string;
+  type: 'website' | 'instagram';
+}
+
 export interface TimelineItem {
   id: string;
   track: 'formacao' | 'experiencia';
@@ -347,6 +353,7 @@ export interface TimelineItem {
   isCurrent?: boolean;
   resultLine: string;
   badge: string;
+  links?: TimelineLink[];
   details: {
     workload?: string;
     description: string;
@@ -411,6 +418,18 @@ export const TIMELINE_ITEMS: TimelineItem[] = [
     endMonth: 7,
     resultLine: 'Desenvolvimento de interfaces em Vue.js para tecnologia interna do núcleo, com Kanban e Scrum.',
     badge: '141 h · Extensão Voluntária',
+    links: [
+      {
+        label: 'Site Oficial',
+        url: 'https://nerds.ufc.br/?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA85MzY2MTk3NDMzOTI0NTkAAae3qUGBRoejGE_5k98a45B5QMuXDXW87Es_zsqyBDhB1EMBuQ-vfI80YTiCEw_aem_sYUM1OzBIIzwn9Q_nBnDcA',
+        type: 'website',
+      },
+      {
+        label: '@nerds.ufc',
+        url: 'https://www.instagram.com/nerds.ufc/',
+        type: 'instagram',
+      },
+    ],
     details: {
       workload: '141 horas comprovadas de extensão universitária',
       description:
@@ -430,6 +449,13 @@ export const TIMELINE_ITEMS: TimelineItem[] = [
     endMonth: 12,
     resultLine: 'Aulas e resolução de exercícios para turma de 60 alunos em cursinho preparatório para o ENEM.',
     badge: '276 h · Monitoria Voluntária',
+    links: [
+      {
+        label: '@aprovaufc',
+        url: 'https://www.instagram.com/aprovaufc/',
+        type: 'instagram',
+      },
+    ],
     details: {
       workload: '276 horas comprovadas de monitoria voluntária',
       description:
@@ -448,6 +474,13 @@ export const TIMELINE_ITEMS: TimelineItem[] = [
     isCurrent: true,
     resultLine: 'Coordena atividades de apoio ao ensino e planeja conteúdos de formação complementar.',
     badge: 'Bolsista de Extensão · Ativo',
+    links: [
+      {
+        label: '@paeufc',
+        url: 'https://www.instagram.com/paeufc/',
+        type: 'instagram',
+      },
+    ],
     details: {
       workload: 'Bolsa de Extensão Universitária (Pró-Reitoria de Extensão UFC)',
       description:
@@ -466,6 +499,13 @@ export const TIMELINE_ITEMS: TimelineItem[] = [
     isCurrent: true,
     resultLine: 'Pesquisa e produção de artigos científicos, elaboração e oferta de cursos técnicos e atividades contínuas de extensão universitária.',
     badge: 'Ensino, Pesquisa e Extensão · Ativo',
+    links: [
+      {
+        label: '@petufcrussas',
+        url: 'https://www.instagram.com/petufcrussas/',
+        type: 'instagram',
+      },
+    ],
     details: {
       workload: 'Membro voluntário do PET Russas',
       description:

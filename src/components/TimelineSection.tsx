@@ -6,11 +6,14 @@ import {
   X,
   ChevronRight,
   Info,
+  Instagram,
+  Globe,
 } from 'lucide-react';
 import {
   TIMELINE_ITEMS,
   TimelineItem,
 } from '../data/portfolioData';
+import { CyberDecryptedText } from './CyberDecryptedText';
 
 export const TimelineSection: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
@@ -31,12 +34,16 @@ export const TimelineSection: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-semibold block mb-1">
-              FORMAÇÃO E EXPERIÊNCIA
-            </span>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-white">
-              Trajetória Acadêmica e Atuação Universitária
-            </h2>
+            <CyberDecryptedText
+              text="FORMAÇÃO E EXPERIÊNCIA"
+              tag="span"
+              className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-semibold block mb-1"
+            />
+            <CyberDecryptedText
+              text="Trajetória Acadêmica e Atuação Universitária"
+              tag="h2"
+              className="font-display text-2xl sm:text-3xl font-bold text-white"
+            />
             <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl font-sans">
               Formação técnica integrada no IFMA, graduação em Engenharia de Software na UFC e extensão universitária.
             </p>
@@ -175,6 +182,29 @@ export const TimelineSection: React.FC = () => {
                       <p className="text-xs text-slate-300 font-sans leading-relaxed line-clamp-3">
                         {item.resultLine}
                       </p>
+
+                      {/* Official Links & Instagram */}
+                      {item.links && item.links.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1.5">
+                          {item.links.map((link) => (
+                            <a
+                              key={link.url}
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="px-2 py-0.5 rounded-md bg-white/[0.04] hover:bg-violet-500/25 text-slate-300 hover:text-white border border-white/[0.08] hover:border-violet-400/50 text-[10px] font-mono flex items-center gap-1 transition-all"
+                            >
+                              {link.type === 'instagram' ? (
+                                <Instagram className="w-2.5 h-2.5 text-pink-400 shrink-0" />
+                              ) : (
+                                <Globe className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+                              )}
+                              <span>{link.label}</span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-2.5 border-t border-white/[0.06] flex items-center justify-between mt-3 text-xs font-mono">
@@ -230,6 +260,29 @@ export const TimelineSection: React.FC = () => {
             <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans">
               {selectedItem.details.description}
             </p>
+
+            {/* Official Links in Details Drawer */}
+            {selectedItem.links && selectedItem.links.length > 0 && (
+              <div className="pt-2 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-mono text-slate-400">Links Oficiais:</span>
+                {selectedItem.links.map((link) => (
+                  <a
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-cyan-500/20 text-slate-200 hover:text-cyan-200 border border-white/10 hover:border-cyan-400/50 text-xs font-mono flex items-center gap-1.5 transition-all"
+                  >
+                    {link.type === 'instagram' ? (
+                      <Instagram className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                    ) : (
+                      <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    )}
+                    <span>{link.label}</span>
+                  </a>
+                ))}
+              </div>
+            )}
 
             <div className="pt-3 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-slate-300">
               <span className="flex items-center gap-1.5 text-cyan-300 font-semibold">

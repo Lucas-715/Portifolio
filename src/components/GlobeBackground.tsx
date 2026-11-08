@@ -50,11 +50,10 @@ export const GlobeBackground: React.FC = () => {
     let mouseX = 0;
     let mouseY = 0;
 
-    // Power surge dynamic variables (0 = normal, 1 = maximum crimson surge)
+    // Power surge dynamic variables
     let surgeFactor = 0;
     let targetSurge = 0;
     let shockwaveRadius = 0;
-    let shockwaveAlpha = 0;
 
     const handlePowerSurge = (e: Event) => {
       const custom = e as CustomEvent<{ level?: number; isFiring?: boolean }>;
@@ -62,8 +61,6 @@ export const GlobeBackground: React.FC = () => {
         if (custom.detail.isFiring) {
           targetSurge = 1.35;
           shockwaveRadius = 10;
-          shockwaveAlpha = 0.95;
-          // Slowly cool down back to zero
           setTimeout(() => {
             targetSurge = 0;
           }, 450);
@@ -74,20 +71,18 @@ export const GlobeBackground: React.FC = () => {
     };
     window.addEventListener('lucky:power-surge', handlePowerSurge);
 
-    // Passive scroll listener for container opacity & offscreen performance
-    let isOffscreen = false;
+    // Keep background vibrant and living across the entire page scroll
     const handleScroll = () => {
       const scroll = window.scrollY;
-      isOffscreen = scroll > window.innerHeight * 0.95;
-      const op = Math.max(0.1, 1 - scroll / 1200);
+      const op = Math.max(0.55, 1 - scroll / 3600);
       container.style.opacity = op.toString();
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
 
     const handleMouseMove = (e: MouseEvent) => {
-      mouseX = (e.clientX / window.innerWidth - 0.5) * 0.22;
-      mouseY = (e.clientY / window.innerHeight - 0.5) * 0.12;
+      mouseX = (e.clientX / window.innerWidth - 0.5) * 0.28;
+      mouseY = (e.clientY / window.innerHeight - 0.5) * 0.18;
     };
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
@@ -112,12 +107,16 @@ export const GlobeBackground: React.FC = () => {
       }
     }
 
-    const stars = Array.from({ length: 85 }).map(() => ({
+    // Dynamic drifting stardust particles
+    const stars = Array.from({ length: 95 }).map(() => ({
       x: Math.random(),
       y: Math.random(),
-      r: Math.random() * 1.3 + 0.3,
-      alpha: Math.random() * 0.45 + 0.15,
+      vx: (Math.random() - 0.5) * 0.00035,
+      vy: (Math.random() - 0.5) * 0.00035,
+      r: Math.random() * 1.5 + 0.35,
+      alpha: Math.random() * 0.55 + 0.2,
       phase: Math.random() * Math.PI * 2,
+      colorType: Math.random() > 0.65 ? 'cyan' : Math.random() > 0.35 ? 'violet' : 'white',
     }));
 
     // Orbital energy arcs connecting global hubs
@@ -130,14 +129,8 @@ export const GlobeBackground: React.FC = () => {
     let tick = 0;
 
     const render = () => {
-      // Offscreen performance bypass: when user scrolled down to content, skip heavy canvas draw cycles
-      if (isOffscreen && surgeFactor < 0.01) {
-        animationFrameId = requestAnimationFrame(render);
-        return;
-      }
-
       tick += 0.012;
-      rotation += 0.0018;
+      rotation += 0.0019;
 
       // Smoothly interpolate power surge factor
       surgeFactor += (targetSurge - surgeFactor) * 0.07;
@@ -147,7 +140,31 @@ export const GlobeBackground: React.FC = () => {
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
-      // Crimson Power Surge Background Shift
+      // ==========================================
+      // LIVING CYBER NEBULAS & AURORA LIGHT DRIFT
+      // ==========================================
+      // Nebula 1: Cyan-Indigo Atmospheric Glow (Upper-Left)
+      const neb1X = w * 0.3 + Math.sin(tick * 0.7) * 45 + mouseX * 50;
+      const neb1Y = h * 0.35 + Math.cos(tick * 0.5) * 35 + mouseY * 30;
+      const nebula1 = ctx.createRadialGradient(neb1X, neb1Y, 20, neb1X, neb1Y, Math.max(w * 0.65, 450));
+      nebula1.addColorStop(0, 'rgba(0, 240, 255, 0.075)');
+      nebula1.addColorStop(0.45, 'rgba(189, 0, 255, 0.035)');
+      nebula1.addColorStop(0.8, 'rgba(10, 6, 28, 0.015)');
+      nebula1.addColorStop(1, 'rgba(4, 2, 10, 0)');
+      ctx.fillStyle = nebula1;
+      ctx.fillRect(0, 0, w, h);
+
+      // Nebula 2: Violet-Fuchsia Deep Cosmic Core (Bottom-Right)
+      const neb2X = w * 0.72 + Math.cos(tick * 0.6) * 40 - mouseX * 40;
+      const neb2Y = h * 0.68 + Math.sin(tick * 0.8) * 35 - mouseY * 25;
+      const nebula2 = ctx.createRadialGradient(neb2X, neb2Y, 20, neb2X, neb2Y, Math.max(w * 0.6, 400));
+      nebula2.addColorStop(0, 'rgba(189, 0, 255, 0.065)');
+      nebula2.addColorStop(0.5, 'rgba(0, 240, 255, 0.025)');
+      nebula2.addColorStop(1, 'rgba(4, 2, 10, 0)');
+      ctx.fillStyle = nebula2;
+      ctx.fillRect(0, 0, w, h);
+
+      // Crimson Power Surge Background Shift (Laser attack reaction)
       if (surgeFactor > 0.01) {
         const bgGrad = ctx.createRadialGradient(w / 2, h * 0.6, 50, w / 2, h * 0.6, Math.max(w, h));
         bgGrad.addColorStop(0, `rgba(239, 68, 68, ${0.45 * surgeFactor})`);
@@ -158,29 +175,41 @@ export const GlobeBackground: React.FC = () => {
         ctx.fillRect(0, 0, w, h);
       }
 
-      // Stars
+      // ==========================================
+      // LIVING STARDUST WITH CELESTIAL DRIFT
+      // ==========================================
       for (const s of stars) {
-        const twinkle = s.alpha + Math.sin(tick * 2 + s.phase) * 0.15;
-        const starR = Math.min(255, Math.round(186 + 69 * surgeFactor));
-        const starG = Math.min(255, Math.round(230 * (1 - surgeFactor * 0.6)));
-        const starB = Math.min(255, Math.round(253 * (1 - surgeFactor * 0.7)));
-        ctx.fillStyle = `rgba(${starR}, ${starG}, ${starB}, ${Math.max(0.08, twinkle)})`;
+        s.x += s.vx;
+        s.y += s.vy;
+        if (s.x < 0) s.x = 1;
+        if (s.x > 1) s.x = 0;
+        if (s.y < 0) s.y = 1;
+        if (s.y > 1) s.y = 0;
+
+        const twinkle = s.alpha + Math.sin(tick * 2.5 + s.phase) * 0.2;
+        let starColor = 'rgba(255, 255, 255,';
+        if (s.colorType === 'cyan') starColor = 'rgba(0, 240, 255,';
+        else if (s.colorType === 'violet') starColor = 'rgba(189, 0, 255,';
+
+        ctx.fillStyle = `${starColor} ${Math.max(0.12, twinkle)})`;
         ctx.beginPath();
-        ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+        const px = s.x * w + mouseX * 20;
+        const py = s.y * h + mouseY * 15;
+        ctx.arc(px, py, s.r, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      const cx = w / 2 + mouseX * 30;
-      const cy = h * 0.62 + mouseY * 18;
+      const cx = w / 2 + mouseX * 35;
+      const cy = h * 0.62 + mouseY * 20;
       const radius = Math.min(w * 0.44, h * 0.56, 450);
 
-      // Ambient Halo — interpolates from Cyber Violet/Cyan to Glowing Crimson Overdrive
+      // Ambient Halo
       const outerGlow = ctx.createRadialGradient(cx, cy, radius * 0.7, cx, cy, radius * 1.45);
       const haloR = Math.round(189 + (255 - 189) * surgeFactor);
       const haloG = Math.round(0 + 30 * surgeFactor);
       const haloB = Math.round(255 * (1 - surgeFactor));
-      outerGlow.addColorStop(0, `rgba(${haloR}, ${haloG}, ${haloB}, ${0.22 + 0.35 * surgeFactor})`);
-      outerGlow.addColorStop(0.5, `rgba(${Math.round(240 * surgeFactor)}, ${Math.round(240 * (1 - surgeFactor))}, ${Math.round(255 * (1 - surgeFactor))}, ${0.10 + 0.25 * surgeFactor})`);
+      outerGlow.addColorStop(0, `rgba(${haloR}, ${haloG}, ${haloB}, ${0.25 + 0.35 * surgeFactor})`);
+      outerGlow.addColorStop(0.5, `rgba(${Math.round(240 * surgeFactor)}, ${Math.round(240 * (1 - surgeFactor))}, ${Math.round(255 * (1 - surgeFactor))}, ${0.12 + 0.25 * surgeFactor})`);
       outerGlow.addColorStop(1, 'rgba(4, 2, 10, 0)');
       ctx.fillStyle = outerGlow;
       ctx.beginPath();
@@ -198,116 +227,74 @@ export const GlobeBackground: React.FC = () => {
       );
       if (surgeFactor > 0.05) {
         sphereGrad.addColorStop(0, '#2b0711');
-        sphereGrad.addColorStop(0.65, '#160207');
-        sphereGrad.addColorStop(0.95, '#2e040c');
-        sphereGrad.addColorStop(1, '#ff2244');
+        sphereGrad.addColorStop(0.7, '#150308');
+        sphereGrad.addColorStop(1, '#050103');
       } else {
-        sphereGrad.addColorStop(0, '#12072e');
-        sphereGrad.addColorStop(0.65, '#05020e');
-        sphereGrad.addColorStop(0.95, '#0c051f');
-        sphereGrad.addColorStop(1, '#00f0ff');
+        sphereGrad.addColorStop(0, '#0f0a1c');
+        sphereGrad.addColorStop(0.7, '#070410');
+        sphereGrad.addColorStop(1, '#020106');
       }
       ctx.fillStyle = sphereGrad;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Outer Rim Ring
-      const rimR = Math.round(255 * surgeFactor);
-      const rimG = Math.round(240 * (1 - surgeFactor));
-      const rimB = Math.round(255 * (1 - surgeFactor));
-      ctx.strokeStyle = `rgba(${rimR || 0}, ${rimG}, ${rimB}, ${0.35 + 0.45 * surgeFactor})`;
-      ctx.lineWidth = 1.4 + surgeFactor * 1.5;
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.stroke();
+      // Render Globe 3D Points
+      for (const d of dots) {
+        const x3d = Math.cos(d.lat) * Math.sin(d.lon + rotation);
+        const y3d = Math.sin(d.lat);
+        const z3d = Math.cos(d.lat) * Math.cos(d.lon + rotation);
 
-      const tilt = 0.22 + mouseY * 0.2;
-      const cosTilt = Math.cos(tilt);
-      const sinTilt = Math.sin(tilt);
+        if (z3d > 0) {
+          const px = cx + x3d * radius;
+          const py = cy - y3d * radius;
+          const baseAlpha = z3d * (d.isLand ? 0.95 : 0.28);
+          const dotRadius = (z3d * (d.isLand ? 1.6 : 0.9)) + (surgeFactor * 0.5);
 
-      const project = (lat: number, lon: number, alt = 1) => {
-        const r = radius * alt;
-        const rotLon = lon + rotation + mouseX;
-        const x = r * Math.cos(lat) * Math.sin(rotLon);
-        const y0 = r * Math.sin(lat);
-        const z0 = r * Math.cos(lat) * Math.cos(rotLon);
-
-        const y = y0 * cosTilt - z0 * sinTilt;
-        const z = y0 * sinTilt + z0 * cosTilt;
-        return { x: cx + x, y: cy - y, z };
-      };
-
-      // Matrix Continents
-      for (const dot of dots) {
-        const p = project(dot.lat, dot.lon);
-        if (p.z > 0) {
-          const depthAlpha = Math.min(1, p.z / (radius * 0.65));
-          if (dot.isLand) {
-            const landR = Math.round(255 * surgeFactor);
-            const landG = Math.round(240 * (1 - surgeFactor) + 60 * surgeFactor);
-            const landB = Math.round(255 * (1 - surgeFactor));
-            ctx.fillStyle = `rgba(${landR}, ${landG}, ${landB}, ${(0.72 + 0.25 * surgeFactor) * depthAlpha})`;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 1.5 + surgeFactor * 0.4, 0, Math.PI * 2);
-            ctx.fill();
+          if (surgeFactor > 0.08) {
+            ctx.fillStyle = d.isLand
+              ? `rgba(255, 60, 90, ${baseAlpha * (0.8 + surgeFactor * 0.4)})`
+              : `rgba(180, 20, 40, ${baseAlpha * 0.5})`;
           } else {
-            const ocR = Math.round(189 + (255 - 189) * surgeFactor);
-            const ocG = Math.round(30 * surgeFactor);
-            const ocB = Math.round(255 * (1 - surgeFactor));
-            ctx.fillStyle = `rgba(${ocR}, ${ocG}, ${ocB}, ${(0.12 + 0.2 * surgeFactor) * depthAlpha})`;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 0.85, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillStyle = d.isLand
+              ? `rgba(0, 240, 255, ${baseAlpha})`
+              : `rgba(189, 0, 255, ${baseAlpha * 0.5})`;
           }
+
+          ctx.beginPath();
+          ctx.arc(px, py, Math.max(0.4, dotRadius), 0, Math.PI * 2);
+          ctx.fill();
         }
       }
 
-      // Orbital Arcs
+      // Render Energy Arcs
       for (const arc of arcs) {
-        arc.progress = (arc.progress + 0.005) % 1;
-        const p1 = project(arc.lat1, arc.lon1, 1.01);
-        const p2 = project(arc.lat2, arc.lon2, 1.01);
-        const midLat = (arc.lat1 + arc.lat2) / 2;
-        const midLon = (arc.lon1 + arc.lon2) / 2;
-        const pMid = project(midLat, midLon, 1.22);
+        arc.progress = (arc.progress + 0.006) % 1;
+        const lat = arc.lat1 + (arc.lat2 - arc.lat1) * arc.progress;
+        const lon = arc.lon1 + (arc.lon2 - arc.lon1) * arc.progress;
 
-        if (p1.z > -radius * 0.15 && p2.z > -radius * 0.15) {
-          const arcColor = surgeFactor > 0.3 ? '#ff2255' : '#00f0ff';
-          ctx.strokeStyle = surgeFactor > 0.3 ? 'rgba(255, 50, 80, 0.55)' : 'rgba(0, 240, 255, 0.25)';
-          ctx.lineWidth = 1.2 + surgeFactor * 1.0;
+        const x3d = Math.cos(lat) * Math.sin(lon + rotation);
+        const y3d = Math.sin(lat);
+        const z3d = Math.cos(lat) * Math.cos(lon + rotation);
+
+        if (z3d > 0.15) {
+          const elevation = Math.sin(arc.progress * Math.PI) * 22;
+          const px = cx + x3d * (radius + elevation);
+          const py = cy - y3d * (radius + elevation);
+
+          const arcGrad = ctx.createRadialGradient(px, py, 1, px, py, 12);
+          arcGrad.addColorStop(0, surgeFactor > 0.1 ? '#ff1e60' : '#00f0ff');
+          arcGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+          ctx.fillStyle = arcGrad;
           ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.quadraticCurveTo(pMid.x, pMid.y, p2.x, p2.y);
-          ctx.stroke();
-
-          const t = arc.progress;
-          const invT = 1 - t;
-          const px = invT * invT * p1.x + 2 * invT * t * pMid.x + t * t * p2.x;
-          const py = invT * invT * p1.y + 2 * invT * t * pMid.y + t * t * p2.y;
+          ctx.arc(px, py, 12, 0, Math.PI * 2);
+          ctx.fill();
 
           ctx.fillStyle = '#ffffff';
-          ctx.shadowColor = arcColor;
-          ctx.shadowBlur = 8 + surgeFactor * 12;
           ctx.beginPath();
-          ctx.arc(px, py, 2.4 + surgeFactor * 1.2, 0, Math.PI * 2);
+          ctx.arc(px, py, 2.2, 0, Math.PI * 2);
           ctx.fill();
-          ctx.shadowBlur = 0;
         }
-      }
-
-      // Dynamic Shockwave Ripple on Firing
-      if (shockwaveAlpha > 0.01) {
-        shockwaveRadius += 16;
-        shockwaveAlpha *= 0.94;
-        ctx.strokeStyle = `rgba(239, 68, 68, ${shockwaveAlpha})`;
-        ctx.lineWidth = 4 * shockwaveAlpha;
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 15;
-        ctx.beginPath();
-        ctx.arc(cx, cy, shockwaveRadius, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
       }
 
       animationFrameId = requestAnimationFrame(render);
@@ -317,20 +304,19 @@ export const GlobeBackground: React.FC = () => {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('lucky:power-surge', handlePowerSurge);
-      window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('lucky:power-surge', handlePowerSurge);
     };
   }, []);
 
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-500 will-change-transform"
+      className="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-opacity duration-700"
     >
       <canvas ref={canvasRef} className="w-full h-full block" />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#04020a]/35 to-[#04020a]/95" />
     </div>
   );
 };

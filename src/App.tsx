@@ -13,6 +13,7 @@ import { TechSkillsLogos } from './components/TechSkillsLogos';
 import { CompactProjectCard } from './components/CompactProjectCard';
 import { ProjectDetailsDrawer } from './components/ProjectDetailsDrawer';
 import { TimelineSection } from './components/TimelineSection';
+import { CyberDecryptedText } from './components/CyberDecryptedText';
 import {
   MAIN_PROJECTS,
   OTHER_PROJECTS,
@@ -89,13 +90,21 @@ export function App() {
           <div className="max-w-3xl mx-auto flex flex-col items-center relative">
             <div className="absolute -inset-10 bg-radial from-[#04020a]/95 via-[#04020a]/80 to-transparent -z-10 blur-2xl pointer-events-none" />
 
-            <h1 className="font-display text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-cyber-gradient leading-[1.04] drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
-              Lucas Almeida
-            </h1>
+            <CyberDecryptedText
+              text="Lucas Almeida"
+              tag="h1"
+              delay={150}
+              speed={28}
+              className="font-display text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-cyber-gradient leading-[1.04] drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]"
+            />
 
-            <p className="mt-4 text-base sm:text-xl font-medium text-slate-100 drop-shadow-md">
-              Engenharia de Software · Aprendizado Federado · Desenvolvimento Full Stack
-            </p>
+            <CyberDecryptedText
+              text="Engenharia de Software · Aprendizado Federado · Desenvolvimento Full Stack"
+              tag="p"
+              delay={350}
+              speed={20}
+              className="mt-4 text-base sm:text-xl font-medium text-slate-100 drop-shadow-md"
+            />
 
             <p className="mt-4 max-w-2xl text-xs sm:text-sm text-slate-200 leading-relaxed font-normal drop-shadow-md">
               Graduando em <strong className="text-white font-semibold">Engenharia de Software (UFC)</strong> e <strong className="text-white font-semibold">Técnico em Informática (IFMA)</strong>. Projetos acadêmicos e autorais com foco em Aprendizado Federado (FL), explicabilidade de modelos (XAI) e prototipação de sistemas com LLMs.
@@ -113,6 +122,7 @@ export function App() {
                 href={CONTACT_INFO.github}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-contact-link="true"
                 className="btn-cyber-ghost px-6 py-2.5 rounded-full text-xs sm:text-sm flex items-center gap-2 font-mono"
               >
                 <Github className="w-4 h-4" />
@@ -127,12 +137,16 @@ export function App() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 reveal-on-scroll">
             <div className="md:col-span-7 cyber-card rounded-3xl p-7 sm:p-8 flex flex-col justify-between">
               <div>
-                <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider block mb-2 font-semibold">
-                  PERFIL & ABORDAGEM
-                </span>
-                <h2 className="font-display text-xl sm:text-2xl font-bold text-white mb-3 leading-snug">
-                  Unir engenharia de software estruturada à experimentação prática em inteligência artificial.
-                </h2>
+                <CyberDecryptedText
+                  text="PERFIL & ABORDAGEM"
+                  tag="span"
+                  className="text-xs font-mono text-cyan-400 uppercase tracking-wider block mb-2 font-semibold"
+                />
+                <CyberDecryptedText
+                  text="Unir engenharia de software estruturada à experimentação prática em inteligência artificial."
+                  tag="h2"
+                  className="font-display text-xl sm:text-2xl font-bold text-white mb-3 leading-snug"
+                />
                 <div className="space-y-3 text-slate-200 text-xs sm:text-sm leading-relaxed">
                   <p>
                     Minha abordagem prioriza <strong>organização modular</strong>, <strong>testes automatizados (pytest)</strong> e <strong>documentação clara de decisões</strong>.
@@ -151,9 +165,11 @@ export function App() {
 
             <div className="md:col-span-5 cyber-card rounded-3xl p-7 sm:p-8 flex flex-col justify-between bg-gradient-to-b from-cyan-500/[0.04] to-transparent">
               <div>
-                <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider block mb-2 font-semibold">
-                  ÁREAS DE ATUAÇÃO
-                </span>
+                <CyberDecryptedText
+                  text="ÁREAS DE ATUAÇÃO"
+                  tag="span"
+                  className="text-xs font-mono text-cyan-400 uppercase tracking-wider block mb-2 font-semibold"
+                />
                 <h3 className="font-display text-xl font-bold text-white mb-3">
                   Pilares Técnicos
                 </h3>
@@ -178,6 +194,7 @@ export function App() {
                   href={CONTACT_INFO.github}
                   target="_blank"
                   rel="noopener noreferrer"
+                  data-contact-link="true"
                   className="text-cyan-300 hover:text-white flex items-center gap-1 transition-colors"
                 >
                   <span>Lucas-715</span>
@@ -191,12 +208,16 @@ export function App() {
         {/* PROJETOS EM DESTAQUE — BENTO ASSIMÉTRICO COMPACTO */}
         <section id="projetos" className="py-14 px-6 sm:px-12 max-w-5xl mx-auto scroll-mt-20">
           <div className="mb-8 reveal-on-scroll">
-            <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-semibold">
-              PROJETOS EM DESTAQUE
-            </span>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-white mt-1">
-              Engenharia, Pesquisa e Aplicações
-            </h2>
+            <CyberDecryptedText
+              text="PROJETOS EM DESTAQUE"
+              tag="span"
+              className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-semibold"
+            />
+            <CyberDecryptedText
+              text="Engenharia, Pesquisa e Aplicações"
+              tag="h2"
+              className="font-display text-2xl sm:text-3xl font-bold text-white mt-1"
+            />
             <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl font-sans">
               Projetos com código aberto no GitHub, validação prática e prototipação de sistemas.
             </p>
@@ -281,12 +302,16 @@ export function App() {
         {/* ARSENAL TECNOLÓGICO — RESTRIÇÃO INVIOLÁVEL (NÃO ALTERAR NADA) */}
         <section id="skills" className="py-16 px-6 sm:px-12 max-w-5xl mx-auto reveal-on-scroll scroll-mt-20">
           <div className="mb-8">
-            <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-semibold">
-              ARSENAL TECNOLÓGICO
-            </span>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-white mt-1">
-              Conhecimentos Técnicos
-            </h2>
+            <CyberDecryptedText
+              text="ARSENAL TECNOLÓGICO"
+              tag="span"
+              className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-semibold"
+            />
+            <CyberDecryptedText
+              text="Conhecimentos Técnicos"
+              tag="h2"
+              className="font-display text-2xl sm:text-3xl font-bold text-white mt-1"
+            />
             <p className="text-xs text-slate-400 mt-1">
               Tecnologias e ferramentas utilizadas em projetos de desenvolvimento e pesquisa.
             </p>
@@ -301,27 +326,32 @@ export function App() {
         {/* CONTATO COMPLETO */}
         <footer id="contato" className="pt-6 pb-20 px-6 sm:px-12 max-w-5xl mx-auto text-center reveal-on-scroll scroll-mt-20">
           <div className="cyber-card rounded-3xl p-7 sm:p-10 border border-white/[0.08]">
-            <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-semibold">
-              CONTATO & CONEXÃO
-            </span>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-white mt-1">
-              Vamos conversar
-            </h2>
+            <CyberDecryptedText
+              text="CONTATO & CONEXÃO"
+              tag="span"
+              className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-semibold"
+            />
+            <CyberDecryptedText
+              text="Vamos conversar"
+              tag="h2"
+              className="font-display text-2xl sm:text-3xl font-bold text-white mt-1"
+            />
             <p className="mt-2 max-w-xl mx-auto text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
               {TARGET_COMPANY
                 ? `Interessado em discutir Inteligência Artificial, Aprendizado Federado, arquitetura de sistemas ou a oportunidade no ${TARGET_COMPANY}? Meus canais estão abertos.`
                 : 'Interessado em discutir Inteligência Artificial, Aprendizado Federado, arquitetura de sistemas ou oportunidades de estágio? Meus canais estão abertos.'}
             </p>
 
-            {/* Contact Chips */}
+            {/* Contact Chips with Lucky interactive trigger */}
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <a
                 href={CONTACT_INFO.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-cyber-primary px-4 py-2 rounded-xl text-xs flex items-center gap-2 font-mono"
+                data-contact-link="true"
+                className="btn-cyber-primary px-4 py-2 rounded-xl text-xs flex items-center gap-2 font-mono group cursor-pointer"
               >
-                <Linkedin className="w-4 h-4 text-cyan-300" />
+                <Linkedin className="w-4 h-4 text-cyan-300 group-hover:scale-110 transition-transform" />
                 <span>LinkedIn</span>
               </a>
 
@@ -329,17 +359,19 @@ export function App() {
                 href={CONTACT_INFO.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-cyber-ghost px-4 py-2 rounded-xl text-xs flex items-center gap-2 font-mono"
+                data-contact-link="true"
+                className="btn-cyber-ghost px-4 py-2 rounded-xl text-xs flex items-center gap-2 font-mono group cursor-pointer"
               >
-                <Github className="w-4 h-4 text-slate-300" />
+                <Github className="w-4 h-4 text-slate-300 group-hover:text-cyan-300 group-hover:scale-110 transition-all" />
                 <span>GitHub</span>
               </a>
 
               <a
                 href={`mailto:${CONTACT_INFO.email}`}
-                className="btn-cyber-ghost px-4 py-2 rounded-xl text-xs flex items-center gap-2 font-mono"
+                data-contact-link="true"
+                className="btn-cyber-ghost px-4 py-2 rounded-xl text-xs flex items-center gap-2 font-mono group cursor-pointer"
               >
-                <Mail className="w-4 h-4 text-rose-400" />
+                <Mail className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
                 <span>{CONTACT_INFO.email}</span>
               </a>
             </div>

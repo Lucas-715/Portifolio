@@ -44,7 +44,7 @@ export const LuckyAssistant: React.FC = () => {
   const [displayedSpeech, setDisplayedSpeech] = useState<string>('');
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [isDecryptedBadge, setIsDecryptedBadge] = useState(false);
-  const [eyeState, setEyeState] = useState<'normal' | 'blink' | 'happy' | 'scan' | 'angry' | 'charge'>('normal');
+  const [eyeState, setEyeState] = useState<'normal' | 'blink' | 'happy' | 'scan' | 'angry' | 'charge' | 'heart' | 'star'>('normal');
   const [eyeLook, setEyeLook] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: 24, y: 24 });
   const [dockSide, setDockSide] = useState<'right' | 'left' | 'free'>('right');
@@ -52,6 +52,10 @@ export const LuckyAssistant: React.FC = () => {
   const [followMouse, setFollowMouse] = useState(false);
   const [isPreparingFollow, setIsPreparingFollow] = useState(false);
   const [tiltAngle, setTiltAngle] = useState(0);
+
+  // Dash & Sprint state (iFood delivery & Duolingo streak routines)
+  const [dashState, setDashState] = useState<'idle' | 'dashing_out' | 'away' | 'dashing_in'>('idle');
+  const [dashType, setDashType] = useState<'ifood' | 'duolingo' | null>(null);
 
   // Cinematic "Raio da Morte" (Death Ray) & Destruir Cursor State (Fase 3)
   const [deathRayState, setDeathRayState] = useState<'idle' | 'targeting' | 'charging' | 'firing' | 'cooldown'>('idle');
@@ -504,26 +508,37 @@ export const LuckyAssistant: React.FC = () => {
     playCuteChirpMelody(2);
   }, [showBubble, playCuteChirpMelody]);
 
-  // Falar primeiro o que tem para falar com o robô parado, e só depois começar a seguir o mouse
+  // Falar primeiro o que tem para falar com o robô parado, e só depois que a fala SUMIR começar a seguir o mouse
   const toggleFollowMouse = useCallback(() => {
     if (followMouse || isPreparingFollow) {
       stopFollowing();
       return;
     }
 
-    // 1. Fecha o menu e fala primeiro com o robô estático na posição atual
+    // 1. Fecha o menu e fala primeiro com o robô completamente estático na posição atual
     setIsOpen(false);
     setIsPreparingFollow(true);
     playCuteChirpMelody(2);
     setEyeState('happy');
-    setTimeout(() => setEyeState('normal'), 2500);
-    showBubble('Modo Drone ativado! Calibrando propulsores para te acompanhar... (ESC para parar)', 7500);
 
-    // 2. Aguarda o usuário ler a fala com ele parado antes de iniciar o voo
+    const speechText = 'Modo Drone ativado! Calibrando propulsores para te acompanhar... (Pressione ESC para parar)';
+    // Duração do balão: 4500ms
+    const bubbleDisplayDuration = 4500;
+    showBubble(speechText, bubbleDisplayDuration);
+
     if (prepareFollowTimeoutRef.current) {
       clearTimeout(prepareFollowTimeoutRef.current);
     }
+
+    // 2. Aguarda a fala sumir COMPLETAMENTE para começar a seguir
+    const typingTime = (speechText.length / 2) * 24;
+    const totalWaitTime = typingTime + bubbleDisplayDuration + 600;
+
     prepareFollowTimeoutRef.current = window.setTimeout(() => {
+      // Garante que o balão está fechado antes do voo
+      setSpeechBubble(null);
+      setEyeState('normal');
+
       if (botRef.current) {
         const rect = botRef.current.getBoundingClientRect();
         setPosition({
@@ -535,8 +550,163 @@ export const LuckyAssistant: React.FC = () => {
       setFollowMouse(true);
       setIsPreparingFollow(false);
       prepareFollowTimeoutRef.current = null;
-    }, 3000);
+    }, totalWaitTime);
   }, [followMouse, isPreparingFollow, stopFollowing, playCuteChirpMelody, showBubble]);
+
+  // Rotinas de corrida / sumiço do robô: iFood e Duolingo
+  const runIFoodSprint = useCallback(() => {
+    if (deathRayState !== 'idle' || followMouse || isDraggingRef.current || dashState !== 'idle') return;
+
+    setIsOpen(false);
+    setDashType('ifood');
+    setEyeState('blink');
+    playCuteChirpMelody(1);
+    setDashState('dashing_out');
+
+    setTimeout(() => {
+      setDashState('away');
+    }, 380);
+
+    setTimeout(() => {
+      setDashState('dashing_in');
+    }, 2400);
+
+    setTimeout(() => {
+      setDashState('idle');
+      setEyeState('heart');
+      playCuteChirpMelody(3);
+      showBubble(
+        'Fui correndo receber meu pedido do iFood! 🛵🍔🍕 Chegou quentinho e no prazo! Bateria recarregada, foco total nos projetos!',
+        8500
+      );
+      setTimeout(() => {
+        setEyeState((prev) => (prev === 'heart' ? 'normal' : prev));
+      }, 4500);
+    }, 2850);
+  }, [deathRayState, followMouse, dashState, playCuteChirpMelody, showBubble]);
+
+  const runDuolingoSprint = useCallback(() => {
+    if (deathRayState !== 'idle' || followMouse || isDraggingRef.current || dashState !== 'idle') return;
+
+    setIsOpen(false);
+    setDashType('duolingo');
+    setEyeState('blink');
+    playCuteChirpMelody(1);
+    setDashState('dashing_out');
+
+    setTimeout(() => {
+      setDashState('away');
+    }, 380);
+
+    setTimeout(() => {
+      setDashState('dashing_in');
+    }, 2400);
+
+    setTimeout(() => {
+      setDashState('idle');
+      setEyeState('star');
+      playCuteChirpMelody(3);
+      showBubble(
+        'Ufa! Fui correndo fazer o Duolingo! 🦉📚 Se eu perco a ofensiva a coruja me caça... Streak de 150 dias garantido!',
+        8500
+      );
+      setTimeout(() => {
+        setEyeState((prev) => (prev === 'star' ? 'normal' : prev));
+      }, 4500);
+    }, 2850);
+  }, [deathRayState, followMouse, dashState, playCuteChirpMelody, showBubble]);
+
+  // Expor no window para debug/teste rápido se necessário
+  useEffect(() => {
+    (window as any).luckyRunIFood = runIFoodSprint;
+    (window as any).luckyRunDuolingo = runDuolingoSprint;
+  }, [runIFoodSprint, runDuolingoSprint]);
+
+  // Temporizador de ociosidade: dispara as corridas do iFood e Duolingo periodicamente
+  useEffect(() => {
+    let sprintIndex = 0;
+    const interval = setInterval(() => {
+      if (
+        deathRayState === 'idle' &&
+        !followMouse &&
+        !isPreparingFollow &&
+        !isDraggingRef.current &&
+        dashState === 'idle' &&
+        !isOpen
+      ) {
+        if (sprintIndex % 2 === 0) {
+          runIFoodSprint();
+        } else {
+          runDuolingoSprint();
+        }
+        sprintIndex++;
+      }
+    }, 58000);
+
+    return () => clearInterval(interval);
+  }, [deathRayState, followMouse, isPreparingFollow, dashState, isOpen, runIFoodSprint, runDuolingoSprint]);
+
+  // Reação ao passar o mouse sobre botões/links de contato: Lucky faz carinha fofa com corações (♥) ou estrelas (★)
+  useEffect(() => {
+    let revertTimer: number | null = null;
+    let lastContactSpoken = 0;
+
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      const contactEl = target.closest(
+        'a[href*="linkedin"], a[href*="github"], a[href^="mailto:"], a[href*="instagram"], #contato a, #contato button, [data-contact-link]'
+      );
+
+      if (contactEl) {
+        if (revertTimer) {
+          clearTimeout(revertTimer);
+          revertTimer = null;
+        }
+
+        const mood = Math.random() > 0.5 ? 'heart' : 'star';
+        setEyeState(mood);
+        playCuteChirpMelody(2);
+
+        const now = Date.now();
+        if (now - lastContactSpoken > 18000 && !speechBubble) {
+          lastContactSpoken = now;
+          const phrases = [
+            'Adorei a iniciativa! ✨ O Lucas responde rápido no LinkedIn ou por email!',
+            'Bora bater um papo? O Lucas adora trocar ideia sobre IA e arquitetura! 💌',
+            'Canais de contato abertos! Excelente oportunidade de conexão! 🚀',
+          ];
+          const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+          showBubble(phrase, 5500);
+        }
+      }
+    };
+
+    const handleMouseOut = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      const contactEl = target.closest(
+        'a[href*="linkedin"], a[href*="github"], a[href^="mailto:"], a[href*="instagram"], #contato a, #contato button, [data-contact-link]'
+      );
+
+      if (contactEl) {
+        revertTimer = window.setTimeout(() => {
+          setEyeState((prev) => (prev === 'heart' || prev === 'star' ? 'normal' : prev));
+        }, 800);
+      }
+    };
+
+    document.addEventListener('mouseover', handleMouseOver);
+    document.addEventListener('mouseout', handleMouseOut);
+
+    return () => {
+      document.removeEventListener('mouseover', handleMouseOver);
+      document.removeEventListener('mouseout', handleMouseOut);
+      if (revertTimer) clearTimeout(revertTimer);
+    };
+  }, [playCuteChirpMelody, showBubble, speechBubble]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1117,7 +1287,36 @@ export const LuckyAssistant: React.FC = () => {
           isHoveredRef.current = false;
         }}
         style={
-          followMouse
+          dashState === 'dashing_out'
+            ? {
+                right: dockSide === 'left' ? undefined : '24px',
+                left: dockSide === 'left' ? '24px' : undefined,
+                bottom: '24px',
+                transform: 'translateX(260px) rotate(24deg) scale(0.8)',
+                opacity: 0,
+                transition: 'transform 0.38s ease-in, opacity 0.35s ease-in',
+                pointerEvents: 'none',
+              }
+            : dashState === 'away'
+            ? {
+                right: dockSide === 'left' ? undefined : '24px',
+                left: dockSide === 'left' ? '24px' : undefined,
+                bottom: '24px',
+                opacity: 0,
+                pointerEvents: 'none',
+                visibility: 'hidden',
+              }
+            : dashState === 'dashing_in'
+            ? {
+                right: dockSide === 'left' ? undefined : '24px',
+                left: dockSide === 'left' ? '24px' : undefined,
+                bottom: '24px',
+                transform: 'translateX(0) rotate(0deg) scale(1)',
+                opacity: 1,
+                transition: 'transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease-out',
+                pointerEvents: 'auto',
+              }
+            : followMouse
             ? {
                 right: `${position.x}px`,
                 bottom: `${position.y}px`,
@@ -1382,6 +1581,22 @@ export const LuckyAssistant: React.FC = () => {
                   <>
                     <div className="w-2 h-2 rounded-xs bg-cyan-300 shadow-[0_0_6px_#00f0ff]" />
                     <div className="w-2 h-2 rounded-xs bg-cyan-300 shadow-[0_0_6px_#00f0ff]" />
+                  </>
+                )}
+
+                {/* 7. HEART EYES (♥ ♥) - Reação apaixonada/super feliz para contato */}
+                {eyeState === 'heart' && (
+                  <>
+                    <span className="text-rose-400 font-extrabold text-[12px] leading-none animate-pulse drop-shadow-[0_0_8px_#ff1e60]">♥</span>
+                    <span className="text-rose-400 font-extrabold text-[12px] leading-none animate-pulse drop-shadow-[0_0_8px_#ff1e60]">♥</span>
+                  </>
+                )}
+
+                {/* 8. STAR EYES (★ ★) - Reação brilhante de estrela */}
+                {eyeState === 'star' && (
+                  <>
+                    <span className="text-amber-300 font-extrabold text-[12px] leading-none animate-pulse drop-shadow-[0_0_8px_#fbbf24]">★</span>
+                    <span className="text-amber-300 font-extrabold text-[12px] leading-none animate-pulse drop-shadow-[0_0_8px_#fbbf24]">★</span>
                   </>
                 )}
               </div>
