@@ -16,8 +16,8 @@ export const CyberDecryptedText: React.FC<CyberDecryptedTextProps> = ({
   text,
   tag = 'span',
   className = '',
-  speed = 40,
-  delay = 140,
+  speed = 20,
+  delay = 70,
   scrambleLoops = 14,
   triggerOnScroll = true,
 }) => {

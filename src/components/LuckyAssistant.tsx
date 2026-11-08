@@ -93,6 +93,7 @@ export const LuckyAssistant: React.FC = () => {
   const isSprintActiveRef = useRef<boolean>(false);
   const pendingScrollSectionRef = useRef<string | null>(null);
   const lastClickTimeRef = useRef<number>(0);
+  const lastHoverSoundRef = useRef<number>(0);
 
   // Audio Context initialization
   const getAudioContext = () => {
@@ -284,7 +285,7 @@ export const LuckyAssistant: React.FC = () => {
       const totalLen = targetText.length;
       let progress = 0;
       let frame = 0;
-      const initialScrambleFrames = 12;
+      const initialScrambleFrames = 6;
 
       const interval = setInterval(() => {
         frame++;
@@ -328,7 +329,7 @@ export const LuckyAssistant: React.FC = () => {
             playTypewriterClick();
           }
         }
-      }, 35);
+      }, 18);
 
       typingTimerRef.current = interval as unknown as number;
     },
@@ -758,7 +759,13 @@ export const LuckyAssistant: React.FC = () => {
 
         const mood = Math.random() > 0.5 ? 'heart' : 'star';
         setEyeState(mood);
-        playCuteChirpMelody(2);
+
+        // Limite do som de hover: no máximo 1 melodia a cada 4s
+        const nowSound = Date.now();
+        if (nowSound - lastHoverSoundRef.current > 4000) {
+          lastHoverSoundRef.current = nowSound;
+          playCuteChirpMelody(1);
+        }
 
         const now = Date.now();
         if (now - lastContactSpoken > 18000 && !speechBubble) {
