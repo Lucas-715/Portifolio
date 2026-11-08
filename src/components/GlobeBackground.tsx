@@ -1,51 +1,19 @@
 import React, { useEffect, useRef } from 'react';
+import { GLOBE_LAND_DOTS } from '../data/globeDots';
 
-function isLandMass(lat: number, lon: number): boolean {
-  // South America
-  if (lat >= -54 && lat <= 12 && lon >= -81 && lon <= -34) {
-    if (lat > -5 && lon > -80 && lon < -48) return true;
-    if (lat <= -5 && lat >= -25 && lon >= -76 && lon <= -35) return true;
-    if (lat < -25 && lon >= -73 && lon <= -48 + (lat + 25) * 0.5) return true;
-    return false;
-  }
-  // North America
-  if (lat >= 15 && lat <= 70 && lon >= -165 && lon <= -55) {
-    if (lat < 30 && lon > -115 && lon < -80) return true;
-    if (lat >= 30 && lat <= 55 && lon >= -125 && lon <= -65) return true;
-    if (lat > 55 && lon >= -160 && lon <= -60) return true;
-    return false;
-  }
-  // Europe
-  if (lat >= 36 && lat <= 70 && lon >= -10 && lon <= 45) return true;
-  // Africa
-  if (lat >= -34 && lat <= 35 && lon >= -17 && lon <= 50) {
-    if (lat > 5 && lon >= -17 && lon <= 48) return true;
-    if (lat <= 5 && lon >= 10 && lon <= 42) return true;
-    return false;
-  }
-  // Asia
-  if (lat >= 8 && lat <= 72 && lon >= 45 && lon <= 145) {
-    if (lat > 20 && lon >= 45 && lon <= 135) return true;
-    if (lat <= 20 && lon >= 72 && lon <= 125) return true;
-    return false;
-  }
-  // Australia
-  if (lat >= -38 && lat <= -12 && lon >= 114 && lon <= 153) return true;
-  return false;
-}
-
-interface Meteor {
-  x: number;
-  y: number;
-  dx: number;
-  dy: number;
-  length: number;
-  speed: number;
-  alpha: number;
-  life: number;
-  maxLife: number;
-  color: string;
-}
+// Key metropolitan hubs for glowing city clusters (lat, lon in radians)
+const CITY_HUBS = [
+  { lat: (-15.79 * Math.PI) / 180, lon: (-47.88 * Math.PI) / 180, name: 'Brasilia' },
+  { lat: (-23.55 * Math.PI) / 180, lon: (-46.63 * Math.PI) / 180, name: 'Sao Paulo' },
+  { lat: (-3.73 * Math.PI) / 180, lon: (-38.52 * Math.PI) / 180, name: 'Fortaleza' },
+  { lat: (40.71 * Math.PI) / 180, lon: (-74.0 * Math.PI) / 180, name: 'New York' },
+  { lat: (37.77 * Math.PI) / 180, lon: (-122.41 * Math.PI) / 180, name: 'San Francisco' },
+  { lat: (51.5 * Math.PI) / 180, lon: (-0.12 * Math.PI) / 180, name: 'London' },
+  { lat: (48.85 * Math.PI) / 180, lon: (2.35 * Math.PI) / 180, name: 'Paris' },
+  { lat: (35.67 * Math.PI) / 180, lon: (139.65 * Math.PI) / 180, name: 'Tokyo' },
+  { lat: (1.35 * Math.PI) / 180, lon: (103.81 * Math.PI) / 180, name: 'Singapore' },
+  { lat: (25.2 * Math.PI) / 180, lon: (55.27 * Math.PI) / 180, name: 'Dubai' },
+];
 
 export const GlobeBackground: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -63,7 +31,7 @@ export const GlobeBackground: React.FC = () => {
     let mouseX = 0;
     let mouseY = 0;
 
-    // Power surge dynamic variables
+    // Power surge dynamic variables (reaction to Lucky laser cannon)
     let surgeFactor = 0;
     let targetSurge = 0;
 
@@ -82,18 +50,18 @@ export const GlobeBackground: React.FC = () => {
     };
     window.addEventListener('lucky:power-surge', handlePowerSurge);
 
-    // Keep background vibrant and living across the entire page scroll
+    // Fade background softly on scroll down
     const handleScroll = () => {
       const scroll = window.scrollY;
-      const op = Math.max(0.6, 1 - scroll / 3800);
+      const op = Math.max(0.45, 1 - scroll / 3200);
       container.style.opacity = op.toString();
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
 
     const handleMouseMove = (e: MouseEvent) => {
-      mouseX = (e.clientX / window.innerWidth - 0.5) * 0.28;
-      mouseY = (e.clientY / window.innerHeight - 0.5) * 0.18;
+      mouseX = (e.clientX / window.innerWidth - 0.5) * 0.25;
+      mouseY = (e.clientY / window.innerHeight - 0.5) * 0.15;
     };
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
@@ -104,63 +72,51 @@ export const GlobeBackground: React.FC = () => {
     resize();
     window.addEventListener('resize', resize);
 
-    // Precompute high-density globe dot matrix
-    const dots: { lat: number; lon: number; isLand: boolean }[] = [];
-    for (let lat = -80; lat <= 80; lat += 2.8) {
-      const cosLat = Math.cos((lat * Math.PI) / 180);
-      const stepLon = Math.max(2.8, 2.8 / Math.max(0.18, cosLat));
-      for (let lon = -180; lon < 180; lon += stepLon) {
-        dots.push({
-          lat: (lat * Math.PI) / 180,
-          lon: (lon * Math.PI) / 180,
-          isLand: isLandMass(lat, lon),
-        });
-      }
-    }
+    // Precompute dots in radians with city proximity info
+    const precomputedDots = GLOBE_LAND_DOTS.map(([latDeg, lonDeg]) => {
+      const lat = (latDeg * Math.PI) / 180;
+      const lon = (lonDeg * Math.PI) / 180;
+      const cosLat = Math.cos(lat);
+      const sinLat = Math.sin(lat);
 
-    // Dynamic deep space stars (135 stars with varying depths & diffraction sparkles)
-    const stars = Array.from({ length: 135 }).map((_, i) => ({
+      let isNearCity = false;
+      for (const hub of CITY_HUBS) {
+        const dLat = lat - hub.lat;
+        const dLon = lon - hub.lon;
+        if (dLat * dLat + dLon * dLon < 0.035) {
+          isNearCity = true;
+          break;
+        }
+      }
+
+      return {
+        lat,
+        lon,
+        cosLat,
+        sinLat,
+        isNearCity,
+      };
+    });
+
+    // Deep space stars (clean, subtle, identical to Sellix aesthetic)
+    const stars = Array.from({ length: 110 }).map(() => ({
       x: Math.random(),
-      y: Math.random(),
-      vx: (Math.random() - 0.5) * 0.0003,
-      vy: (Math.random() - 0.5) * 0.0003,
-      r: Math.random() < 0.12 ? Math.random() * 1.8 + 1.2 : Math.random() * 1.1 + 0.35,
-      alpha: Math.random() * 0.6 + 0.25,
+      y: Math.random() * 0.75, // focused in upper celestial space
+      r: Math.random() * 1.2 + 0.35,
+      alpha: Math.random() * 0.65 + 0.2,
       phase: Math.random() * Math.PI * 2,
-      isBright: i < 14,
-      colorType: Math.random() > 0.65 ? 'cyan' : Math.random() > 0.35 ? 'violet' : 'white',
     }));
 
-    // Constellation lines linking small celestial clusters
-    const constellationPairs = [
-      [2, 5],
-      [5, 9],
-      [9, 11],
-      [18, 22],
-      [22, 27],
-      [34, 40],
-      [40, 48],
-    ];
-
-    // Orbital energy arcs connecting global hubs
-    const arcs = [
-      { lat1: -0.085, lon1: -0.66, lat2: -0.41, lon2: -0.81, progress: 0 },
-      { lat1: -0.085, lon1: -0.66, lat2: 0.65, lon2: -1.3, progress: 0.4 },
-      { lat1: -0.41, lon1: -0.81, lat2: 0.88, lon2: 0.05, progress: 0.75 },
-      { lat1: 0.65, lon1: -1.3, lat2: 0.58, lon2: 2.1, progress: 0.2 },
-    ];
-
-    // Shooting stars / meteors manager
-    const meteors: Meteor[] = [];
-    let meteorCooldown = 40;
-
+    // Orbital data trajectory loop progress
+    let orbitProgress = 0;
     let tick = 0;
 
     const render = () => {
       tick += 0.012;
-      rotation += 0.0019;
+      rotation += 0.0017;
+      orbitProgress = (orbitProgress + 0.004) % 1;
 
-      // Smoothly interpolate power surge factor
+      // Interpolate power surge
       surgeFactor += (targetSurge - surgeFactor) * 0.07;
       if (surgeFactor < 0.005) surgeFactor = 0;
 
@@ -169,335 +125,263 @@ export const GlobeBackground: React.FC = () => {
       ctx.clearRect(0, 0, w, h);
 
       // ==========================================
-      // 1. DEEP SPACE LIVING NEBULAS & AURORAS
-      // ==========================================
-      // Nebula 1: Upper-left Cyan-Indigo Aurora
-      const neb1X = w * 0.28 + Math.sin(tick * 0.6) * 50 + mouseX * 45;
-      const neb1Y = h * 0.28 + Math.cos(tick * 0.5) * 35 + mouseY * 30;
-      const nebula1 = ctx.createRadialGradient(neb1X, neb1Y, 30, neb1X, neb1Y, Math.max(w * 0.65, 520));
-      nebula1.addColorStop(0, 'rgba(0, 240, 255, 0.09)');
-      nebula1.addColorStop(0.4, 'rgba(99, 102, 241, 0.045)');
-      nebula1.addColorStop(0.8, 'rgba(10, 6, 28, 0.02)');
-      nebula1.addColorStop(1, 'rgba(4, 2, 10, 0)');
-      ctx.fillStyle = nebula1;
-      ctx.fillRect(0, 0, w, h);
-
-      // Nebula 2: Deep Violet-Fuchsia Cosmic Core (Right side)
-      const neb2X = w * 0.78 + Math.cos(tick * 0.65) * 45 - mouseX * 40;
-      const neb2Y = h * 0.55 + Math.sin(tick * 0.75) * 40 - mouseY * 25;
-      const nebula2 = ctx.createRadialGradient(neb2X, neb2Y, 20, neb2X, neb2Y, Math.max(w * 0.6, 480));
-      nebula2.addColorStop(0, 'rgba(189, 0, 255, 0.08)');
-      nebula2.addColorStop(0.45, 'rgba(217, 70, 239, 0.035)');
-      nebula2.addColorStop(0.85, 'rgba(4, 2, 10, 0.015)');
-      nebula2.addColorStop(1, 'rgba(4, 2, 10, 0)');
-      ctx.fillStyle = nebula2;
-      ctx.fillRect(0, 0, w, h);
-
-      // Power Surge background reaction (Laser cannon attack)
-      if (surgeFactor > 0.01) {
-        const bgGrad = ctx.createRadialGradient(w / 2, h * 0.55, 50, w / 2, h * 0.55, Math.max(w, h));
-        bgGrad.addColorStop(0, `rgba(239, 68, 68, ${0.45 * surgeFactor})`);
-        bgGrad.addColorStop(0.45, `rgba(185, 28, 28, ${0.28 * surgeFactor})`);
-        bgGrad.addColorStop(0.85, `rgba(88, 28, 28, ${0.15 * surgeFactor})`);
-        bgGrad.addColorStop(1, 'rgba(4, 2, 10, 0)');
-        ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, w, h);
-      }
-
-      // ==========================================
-      // 2. CONSTELLATION CONNECTION LINES
-      // ==========================================
-      ctx.lineWidth = 0.6;
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.12)';
-      for (const [idx1, idx2] of constellationPairs) {
-        const s1 = stars[idx1];
-        const s2 = stars[idx2];
-        if (s1 && s2) {
-          const x1 = s1.x * w + mouseX * 18;
-          const y1 = s1.y * h + mouseY * 12;
-          const x2 = s2.x * w + mouseX * 18;
-          const y2 = s2.y * h + mouseY * 12;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-        }
-      }
-
-      // ==========================================
-      // 3. TWINKLING STARS WITH DIFFRACTION SPARKLES
+      // 1. DEEP SPACE BACKGROUND & FINE STARS
       // ==========================================
       for (const s of stars) {
-        s.x += s.vx;
-        s.y += s.vy;
-        if (s.x < 0) s.x = 1;
-        if (s.x > 1) s.x = 0;
-        if (s.y < 0) s.y = 1;
-        if (s.y > 1) s.y = 0;
+        const twinkle = s.alpha + Math.sin(tick * 2.2 + s.phase) * 0.2;
+        const alpha = Math.max(0.12, twinkle);
+        const px = s.x * w + mouseX * 18;
+        const py = s.y * h + mouseY * 12;
 
-        const twinkle = s.alpha + Math.sin(tick * 2.8 + s.phase) * 0.22;
-        const currentAlpha = Math.max(0.14, twinkle);
-        let starColor = 'rgba(255, 255, 255,';
-        if (s.colorType === 'cyan') starColor = 'rgba(0, 240, 255,';
-        else if (s.colorType === 'violet') starColor = 'rgba(189, 0, 255,';
-
-        const px = s.x * w + mouseX * 22;
-        const py = s.y * h + mouseY * 16;
-
-        ctx.fillStyle = `${starColor} ${currentAlpha})`;
+        ctx.fillStyle = `rgba(240, 235, 255, ${alpha})`;
         ctx.beginPath();
         ctx.arc(px, py, s.r, 0, Math.PI * 2);
         ctx.fill();
-
-        // 4-point cross diffraction sparkle for bright stars
-        if (s.isBright) {
-          const spikeLen = s.r * 3.6;
-          ctx.strokeStyle = `rgba(255, 255, 255, ${currentAlpha * 0.65})`;
-          ctx.lineWidth = 0.75;
-          ctx.beginPath();
-          ctx.moveTo(px - spikeLen, py);
-          ctx.lineTo(px + spikeLen, py);
-          ctx.moveTo(px, py - spikeLen);
-          ctx.lineTo(px, py + spikeLen);
-          ctx.stroke();
-        }
-      }
-
-      // ==========================================
-      // 4. METEORS / SHOOTING STARS
-      // ==========================================
-      meteorCooldown--;
-      if (meteorCooldown <= 0) {
-        meteorCooldown = Math.floor(Math.random() * 180 + 120); // every ~3-5 seconds
-        const startX = Math.random() * w * 0.85 + w * 0.15;
-        const startY = Math.random() * h * 0.4;
-        const angle = (Math.PI / 180) * (135 + (Math.random() - 0.5) * 22);
-        const speed = Math.random() * 6 + 10;
-        meteors.push({
-          x: startX,
-          y: startY,
-          dx: Math.cos(angle) * speed,
-          dy: Math.sin(angle) * speed,
-          length: Math.random() * 70 + 60,
-          speed,
-          alpha: 1,
-          life: 0,
-          maxLife: Math.floor(Math.random() * 40 + 30),
-          color: Math.random() > 0.4 ? '#00f0ff' : '#bd00ff',
-        });
-      }
-
-      for (let i = meteors.length - 1; i >= 0; i--) {
-        const m = meteors[i];
-        m.life++;
-        m.x += m.dx;
-        m.y += m.dy;
-        m.alpha = Math.max(0, 1 - m.life / m.maxLife);
-
-        ctx.save();
-        ctx.translate(m.x, m.y);
-        const headingAngle = Math.atan2(m.dy, m.dx);
-        ctx.rotate(headingAngle);
-
-        const mGrad = ctx.createLinearGradient(0, 0, -m.length, 0);
-        mGrad.addColorStop(0, `rgba(255, 255, 255, ${m.alpha})`);
-        mGrad.addColorStop(0.2, m.color === '#00f0ff' ? `rgba(0, 240, 255, ${m.alpha * 0.9})` : `rgba(189, 0, 255, ${m.alpha * 0.9})`);
-        mGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
-
-        ctx.strokeStyle = mGrad;
-        ctx.lineWidth = 1.6;
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(-m.length, 0);
-        ctx.stroke();
-
-        ctx.fillStyle = `rgba(255, 255, 255, ${m.alpha})`;
-        ctx.beginPath();
-        ctx.arc(0, 0, 1.8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        if (m.life >= m.maxLife) {
-          meteors.splice(i, 1);
-        }
       }
 
       // =========================================================================
-      // 5. THE CELESTIAL PLANET & RADIANT ATMOSPHERIC RIM (BORDA BRILHANTE)
-      // Perfeita simetria e alinhamento geométrico com o Hero Section
+      // 2. MONUMENTAL PLANET DOME (IDENTICAL TO SELLIX REFERENCE)
       // =========================================================================
-      const cx = w / 2 + mouseX * 28;
-      const cy = h * 0.58 + mouseY * 18;
-      const radius = Math.min(w * 0.44, h * 0.53, 445);
+      // Large spherical dome rising from bottom center into the hero section
+      const radius = Math.min(w * 0.48, h * 0.64, 540);
+      const cx = w / 2 + mouseX * 24;
+      const cy = h * 0.72 + mouseY * 14;
 
-      // (A) Extended Cosmic Atmosphere Corona (Glow suave no espaço ao redor)
-      const coronaGlow = ctx.createRadialGradient(cx, cy, radius * 0.85, cx, cy, radius * 1.35);
-      const cR = Math.round(0 + 255 * surgeFactor);
-      const cG = Math.round(240 * (1 - surgeFactor * 0.8));
-      const cB = Math.round(255 * (1 - surgeFactor * 0.8));
-      coronaGlow.addColorStop(0, `rgba(${cR}, ${cG}, ${cB}, ${0.28 + 0.35 * surgeFactor})`);
-      coronaGlow.addColorStop(0.4, `rgba(168, 85, 247, ${0.14 + 0.2 * surgeFactor})`);
-      coronaGlow.addColorStop(0.8, 'rgba(10, 6, 28, 0.03)');
-      coronaGlow.addColorStop(1, 'rgba(4, 2, 10, 0)');
-      ctx.fillStyle = coronaGlow;
+      // (A) OUTWARD SPREADING NEON PURPLE ATMOSPHERE CORONA
+      // Wide, soft, luminous purple haze extending into space
+      const coronaRadius = radius * 1.24;
+      const corona = ctx.createRadialGradient(cx, cy, radius * 0.92, cx, cy, coronaRadius);
+      const purpleR = Math.round(168 + (255 - 168) * surgeFactor);
+      const purpleG = Math.round(85 * (1 - surgeFactor));
+      const purpleB = Math.round(247 * (1 - surgeFactor * 0.5));
+
+      corona.addColorStop(0, `rgba(${purpleR}, ${purpleG}, ${purpleB}, ${0.72 + 0.25 * surgeFactor})`);
+      corona.addColorStop(0.35, `rgba(139, 92, 246, ${0.42 + 0.2 * surgeFactor})`);
+      corona.addColorStop(0.7, `rgba(88, 28, 135, ${0.14 + 0.1 * surgeFactor})`);
+      corona.addColorStop(1, 'rgba(5, 2, 10, 0)');
+
+      ctx.fillStyle = corona;
       ctx.beginPath();
-      ctx.arc(cx, cy, radius * 1.35, 0, Math.PI * 2);
+      ctx.arc(cx, cy, coronaRadius, 0, Math.PI * 2);
       ctx.fill();
 
-      // (B) Planet Obsidian Dark Core
-      const sphereGrad = ctx.createRadialGradient(
-        cx,
-        cy - radius * 0.5,
+      // (B) FLANK LIMB ACCENTS (Extra thick purple atmospheric glow on sides)
+      const flankLeft = ctx.createRadialGradient(
+        cx - radius * 0.88,
+        cy,
         radius * 0.1,
+        cx - radius * 0.88,
+        cy,
+        radius * 0.45
+      );
+      flankLeft.addColorStop(0, `rgba(${purpleR}, ${purpleG}, ${purpleB}, 0.35)`);
+      flankLeft.addColorStop(1, 'rgba(5, 2, 10, 0)');
+      ctx.fillStyle = flankLeft;
+      ctx.beginPath();
+      ctx.arc(cx - radius * 0.88, cy, radius * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      const flankRight = ctx.createRadialGradient(
+        cx + radius * 0.88,
+        cy,
+        radius * 0.1,
+        cx + radius * 0.88,
+        cy,
+        radius * 0.45
+      );
+      flankRight.addColorStop(0, `rgba(${purpleR}, ${purpleG}, ${purpleB}, 0.35)`);
+      flankRight.addColorStop(1, 'rgba(5, 2, 10, 0)');
+      ctx.fillStyle = flankRight;
+      ctx.beginPath();
+      ctx.arc(cx + radius * 0.88, cy, radius * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // (C) PLANET OBSIDIAN DARK CORE
+      // Deep space black inside the planet with subtle atmospheric gradient
+      const sphereCore = ctx.createRadialGradient(
+        cx,
+        cy - radius * 0.45,
+        radius * 0.08,
         cx,
         cy,
         radius
       );
       if (surgeFactor > 0.05) {
-        sphereGrad.addColorStop(0, '#2b0711');
-        sphereGrad.addColorStop(0.7, '#140308');
-        sphereGrad.addColorStop(1, '#050103');
+        sphereCore.addColorStop(0, '#260815');
+        sphereCore.addColorStop(0.7, '#12030a');
+        sphereCore.addColorStop(1, '#050104');
       } else {
-        sphereGrad.addColorStop(0, '#0c071d');
-        sphereGrad.addColorStop(0.5, '#070412');
-        sphereGrad.addColorStop(1, '#020106');
+        sphereCore.addColorStop(0, '#0c071d');
+        sphereCore.addColorStop(0.55, '#060310');
+        sphereCore.addColorStop(1, '#030107');
       }
-      ctx.fillStyle = sphereGrad;
+
+      ctx.fillStyle = sphereCore;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // (C) Inner Horizon Atmospheric Haze
+      // (D) INNER ATMOSPHERIC HORIZON HAZE (Subtle blue-purple haze on the inner rim)
       const innerHaze = ctx.createRadialGradient(cx, cy, radius * 0.86, cx, cy, radius);
-      innerHaze.addColorStop(0, 'rgba(0, 240, 255, 0)');
-      innerHaze.addColorStop(0.7, 'rgba(0, 240, 255, 0.08)');
-      innerHaze.addColorStop(1, 'rgba(0, 240, 255, 0.28)');
+      innerHaze.addColorStop(0, 'rgba(168, 85, 247, 0)');
+      innerHaze.addColorStop(0.7, 'rgba(168, 85, 247, 0.12)');
+      innerHaze.addColorStop(1, 'rgba(192, 132, 252, 0.35)');
       ctx.fillStyle = innerHaze;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // (D) Render Globe 3D Points Matrix (Continents & Network Nodes)
-      for (const d of dots) {
-        const x3d = Math.cos(d.lat) * Math.sin(d.lon + rotation);
-        const y3d = Math.sin(d.lat);
-        const z3d = Math.cos(d.lat) * Math.cos(d.lon + rotation);
+      // =========================================================================
+      // 3. GEOGRAPHICALLY ACCURATE DOTTED CONTINENTS & PULSING CITY NODES
+      // =========================================================================
+      const cityPulse = Math.sin(tick * 3.5) * 0.5 + 0.5;
 
-        if (z3d > 0) {
+      for (let i = 0; i < precomputedDots.length; i++) {
+        const d = precomputedDots[i];
+        const x3d = d.cosLat * Math.sin(d.lon + rotation);
+        const y3d = d.sinLat;
+        const z3d = d.cosLat * Math.cos(d.lon + rotation);
+
+        if (z3d > 0.02) {
           const px = cx + x3d * radius;
           const py = cy - y3d * radius;
-          const baseAlpha = z3d * (d.isLand ? 0.95 : 0.22);
-          const dotRadius = (z3d * (d.isLand ? 1.6 : 0.85)) + (surgeFactor * 0.5);
 
-          if (surgeFactor > 0.08) {
-            ctx.fillStyle = d.isLand
-              ? `rgba(255, 60, 90, ${baseAlpha * (0.85 + surgeFactor * 0.4)})`
-              : `rgba(180, 20, 40, ${baseAlpha * 0.4})`;
-          } else {
-            ctx.fillStyle = d.isLand
-              ? `rgba(0, 240, 255, ${baseAlpha})`
-              : `rgba(168, 85, 247, ${baseAlpha * 0.45})`;
-          }
+          const dotRadius = Math.max(0.65, z3d * 2.15);
+          const alpha = Math.min(1.0, z3d * 1.25);
 
-          ctx.beginPath();
-          ctx.arc(px, py, Math.max(0.4, dotRadius), 0, Math.PI * 2);
-          ctx.fill();
+          // Glowing metropolitan city nodes
+          if (d.isNearCity) {
+            // Soft lavender-purple glow around the city hub
+            ctx.fillStyle = `rgba(${purpleR}, ${purpleG}, ${purpleB}, ${alpha * (0.35 + 0.25 * cityPulse)})`;
+            ctx.beginPath();
+            ctx.arc(px, py, dotRadius * 3.5, 0, Math.PI * 2);
+            ctx.fill();
 
-          // Pulsing digital city lights on land
-          if (d.isLand && Math.sin(d.lat * 12 + d.lon * 15) > 0.84) {
-            const cityPulse = Math.sin(tick * 3 + d.lat * 8) * 0.5 + 0.5;
-            ctx.fillStyle = `rgba(255, 255, 255, ${baseAlpha * 0.95})`;
+            // Intense white-hot core
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             ctx.beginPath();
             ctx.arc(px, py, dotRadius * 1.3, 0, Math.PI * 2);
             ctx.fill();
-
-            ctx.fillStyle = `rgba(0, 240, 255, ${baseAlpha * 0.45 * cityPulse})`;
+          } else {
+            // Standard continental land dots (pure crisp white-lavender)
+            ctx.fillStyle = `rgba(242, 235, 255, ${alpha * 0.95})`;
             ctx.beginPath();
-            ctx.arc(px, py, dotRadius * 2.8, 0, Math.PI * 2);
+            ctx.arc(px, py, dotRadius, 0, Math.PI * 2);
             ctx.fill();
           }
         }
       }
 
-      // (E) Render Orbital Energy Arcs
-      for (const arc of arcs) {
-        arc.progress = (arc.progress + 0.0055) % 1;
-        const lat = arc.lat1 + (arc.lat2 - arc.lat1) * arc.progress;
-        const lon = arc.lon1 + (arc.lon2 - arc.lon1) * arc.progress;
+      // =========================================================================
+      // 4. 3D ORBITAL LIGHT TRAJECTORY PATH (AS SEEN IN VIDEO)
+      // =========================================================================
+      // Smooth 3D elliptical orbit trajectory looping across the globe
+      const orbitTilt = (-15 * Math.PI) / 180;
+      const cosTilt = Math.cos(orbitTilt);
+      const sinTilt = Math.sin(orbitTilt);
+      const orbitA = radius * 1.1; // semi-major
+      const orbitB = radius * 0.38; // semi-minor
 
-        const x3d = Math.cos(lat) * Math.sin(lon + rotation);
-        const y3d = Math.sin(lat);
-        const z3d = Math.cos(lat) * Math.cos(lon + rotation);
+      ctx.save();
+      // Draw faint glass-like orbital path
+      ctx.beginPath();
+      const steps = 72;
+      for (let s = 0; s <= steps; s++) {
+        const theta = (s / steps) * Math.PI * 2;
+        const ox = Math.cos(theta) * orbitA;
+        const oy = Math.sin(theta) * orbitB;
+        const oz = -Math.sin(theta) * radius * 0.4;
 
-        if (z3d > 0.15) {
-          const elevation = Math.sin(arc.progress * Math.PI) * 20;
-          const px = cx + x3d * (radius + elevation);
-          const py = cy - y3d * (radius + elevation);
+        // Apply tilt
+        const rotX = ox * cosTilt - oy * sinTilt;
+        const rotY = ox * sinTilt + oy * cosTilt;
 
-          const arcGrad = ctx.createRadialGradient(px, py, 1, px, py, 12);
-          arcGrad.addColorStop(0, surgeFactor > 0.1 ? '#ff1e60' : '#00f0ff');
-          arcGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
-          ctx.fillStyle = arcGrad;
-          ctx.beginPath();
-          ctx.arc(px, py, 12, 0, Math.PI * 2);
-          ctx.fill();
+        const screenX = cx + rotX;
+        const screenY = cy + rotY;
 
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(px, py, 2.2, 0, Math.PI * 2);
-          ctx.fill();
+        if (s === 0) {
+          ctx.moveTo(screenX, screenY);
+        } else {
+          ctx.lineTo(screenX, screenY);
         }
       }
+      ctx.strokeStyle = 'rgba(192, 132, 252, 0.22)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
 
-      // (F) BORDA DO PLANETA BRILHANTE (RADIANT ATMOSPHERIC LIMB & INCANDESCENT HORIZON)
-      // 1. Atmosphere scattering halo arc
-      const rimScatter = ctx.createRadialGradient(cx, cy, radius * 0.96, cx, cy, radius * 1.14);
-      rimScatter.addColorStop(0, 'rgba(0, 240, 255, 0.85)');
-      rimScatter.addColorStop(0.35, 'rgba(0, 210, 255, 0.55)');
-      rimScatter.addColorStop(0.7, 'rgba(168, 85, 247, 0.22)');
-      rimScatter.addColorStop(1, 'rgba(0, 240, 255, 0)');
-      ctx.fillStyle = rimScatter;
+      // Travelling data pulse along the orbit
+      const pulseTheta = orbitProgress * Math.PI * 2;
+      const pox = Math.cos(pulseTheta) * orbitA;
+      const poy = Math.sin(pulseTheta) * orbitB;
+      const poz = -Math.sin(pulseTheta) * radius * 0.4;
+
+      const protX = pox * cosTilt - poy * sinTilt;
+      const protY = pox * sinTilt + poy * cosTilt;
+
+      const pulseX = cx + protX;
+      const pulseY = cy + protY;
+
+      // Only draw with full brilliance when on the front hemisphere
+      const pulseAlpha = poz > -radius * 0.2 ? 1 : 0.3;
+
+      // Radiant pulse flare
+      const pulseGlow = ctx.createRadialGradient(pulseX, pulseY, 0, pulseX, pulseY, 14);
+      pulseGlow.addColorStop(0, `rgba(255, 255, 255, ${pulseAlpha})`);
+      pulseGlow.addColorStop(0.4, `rgba(168, 85, 247, ${pulseAlpha * 0.8})`);
+      pulseGlow.addColorStop(1, 'rgba(168, 85, 247, 0)');
+      ctx.fillStyle = pulseGlow;
       ctx.beginPath();
-      ctx.arc(cx, cy, radius * 1.14, 0, Math.PI * 2);
+      ctx.arc(pulseX, pulseY, 14, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. Razor-sharp incandescent upper horizon arc (Linha brilhante da borda)
+      // White focal particle
+      ctx.fillStyle = `rgba(255, 255, 255, ${pulseAlpha})`;
+      ctx.beginPath();
+      ctx.arc(pulseX, pulseY, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // =========================================================================
+      // 5. INCANDESCENT ATMOSPHERIC CREST RIM (BORDA BRILHANTE IDENTICA AO VÍDEO)
+      // =========================================================================
       ctx.save();
       ctx.beginPath();
-      ctx.arc(cx, cy, radius, Math.PI * 0.8, Math.PI * 2.2);
-      const rimStroke = ctx.createLinearGradient(cx - radius * 0.85, cy, cx + radius * 0.85, cy);
-      rimStroke.addColorStop(0, 'rgba(0, 240, 255, 0.2)');
-      rimStroke.addColorStop(0.25, 'rgba(0, 240, 255, 0.95)');
-      rimStroke.addColorStop(0.5, '#ffffff');
-      rimStroke.addColorStop(0.75, 'rgba(0, 240, 255, 0.95)');
-      rimStroke.addColorStop(1, 'rgba(0, 240, 255, 0.2)');
+      // Arc curving over the upper dome of the planet
+      ctx.arc(cx, cy, radius, Math.PI * 0.84, Math.PI * 2.16);
+      const rimStroke = ctx.createLinearGradient(cx - radius * 0.9, cy, cx + radius * 0.9, cy);
+      rimStroke.addColorStop(0, 'rgba(168, 85, 247, 0.2)');
+      rimStroke.addColorStop(0.2, 'rgba(192, 132, 252, 0.92)');
+      rimStroke.addColorStop(0.5, '#ffffff'); // Pure incandescent white crest at the apex
+      rimStroke.addColorStop(0.8, 'rgba(192, 132, 252, 0.92)');
+      rimStroke.addColorStop(1, 'rgba(168, 85, 247, 0.2)');
+
       ctx.strokeStyle = rimStroke;
-      ctx.lineWidth = 2.4;
-      ctx.shadowColor = '#00f0ff';
-      ctx.shadowBlur = 22;
+      ctx.lineWidth = 2.6;
+      ctx.shadowColor = `rgb(${purpleR}, ${purpleG}, ${purpleB})`;
+      ctx.shadowBlur = 24;
       ctx.stroke();
       ctx.restore();
 
-      // 3. Celestial Dawn / Starburst Flare no topo do planeta
+      // Apex soft aurora starburst bloom
       const apexX = cx;
       const apexY = cy - radius;
-      const flareGrad = ctx.createRadialGradient(apexX, apexY, 0, apexX, apexY, 120);
-      flareGrad.addColorStop(0, 'rgba(255, 255, 255, 0.92)');
-      flareGrad.addColorStop(0.2, 'rgba(0, 240, 255, 0.65)');
-      flareGrad.addColorStop(0.6, 'rgba(168, 85, 247, 0.2)');
-      flareGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
-      ctx.fillStyle = flareGrad;
+      const apexBloom = ctx.createRadialGradient(apexX, apexY, 0, apexX, apexY, 95);
+      apexBloom.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      apexBloom.addColorStop(0.25, `rgba(${purpleR}, ${purpleG}, ${purpleB}, 0.65)`);
+      apexBloom.addColorStop(0.7, 'rgba(139, 92, 246, 0.15)');
+      apexBloom.addColorStop(1, 'rgba(139, 92, 246, 0)');
+      ctx.fillStyle = apexBloom;
       ctx.beginPath();
-      ctx.arc(apexX, apexY, 120, 0, Math.PI * 2);
+      ctx.arc(apexX, apexY, 95, 0, Math.PI * 2);
       ctx.fill();
 
-      // Horizontal lens flare streak across the apex
-      const streakGrad = ctx.createLinearGradient(apexX - 190, apexY, apexX + 190, apexY);
-      streakGrad.addColorStop(0, 'rgba(0, 240, 255, 0)');
-      streakGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
-      streakGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
-      ctx.fillStyle = streakGrad;
-      ctx.fillRect(apexX - 190, apexY - 1.2, 380, 2.4);
+      // Horizontal subtle lens streak across apex
+      const apexStreak = ctx.createLinearGradient(apexX - 160, apexY, apexX + 160, apexY);
+      apexStreak.addColorStop(0, 'rgba(168, 85, 247, 0)');
+      apexStreak.addColorStop(0.5, 'rgba(255, 255, 255, 0.85)');
+      apexStreak.addColorStop(1, 'rgba(168, 85, 247, 0)');
+      ctx.fillStyle = apexStreak;
+      ctx.fillRect(apexX - 160, apexY - 1.2, 320, 2.4);
 
       animationFrameId = requestAnimationFrame(render);
     };
