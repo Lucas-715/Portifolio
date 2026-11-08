@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #04020a;
+    color: #f1f5f9;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  /* Cyberpunk Minimal Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #04020a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1e1338;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00f0ff;
+  }
+}
+
+/* Cyberpunk Minimalist Obsidian Card with Content Containment for 120 FPS Scroll */
+.cyber-card {
+  background: rgba(10, 6, 20, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.85);
+  contain: content;
+  transform: translateZ(0);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.cyber-card:hover {
+  border-color: rgba(0, 240, 255, 0.45);
+  box-shadow: 0 0 35px rgba(0, 240, 255, 0.12), inset 0 0 20px rgba(189, 0, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+/* Cyberpunk Pill Buttons */
+.btn-cyber-primary {
+  background: linear-gradient(135deg, #00f0ff 0%, #bd00ff 100%);
+  color: #04020a;
+  font-weight: 700;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.45);
+  transition: all 0.2s ease;
+}
+
+.btn-cyber-primary:hover {
+  box-shadow: 0 0 38px rgba(0, 240, 255, 0.75), 0 0 20px rgba(189, 0, 255, 0.5);
+  transform: translateY(-2px);
+  color: #ffffff;
+}
+
+.btn-cyber-ghost {
+  background: rgba(255, 255, 255, 0.04);
+  color: #f1f5f9;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
+}
+
+.btn-cyber-ghost:hover {
+  background: rgba(0, 240, 255, 0.1);
+  border-color: rgba(0, 240, 255, 0.6);
+  color: #00f0ff;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Hero Gradient */
+.text-cyber-gradient {
+  background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 55%, #00f0ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Scroll Animation Utilities */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.45s ease-out, transform 0.45s ease-out;
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Screen Shake for Giant Cannon Shot */
+@keyframes screenShake {
+  0% { transform: translate(0, 0); }
+  15% { transform: translate(-6px, 4px) rotate(-0.4deg); }
+  30% { transform: translate(5px, -3px) rotate(0.3deg); }
+  45% { transform: translate(-4px, 2px); }
+  60% { transform: translate(3px, -2px); }
+  80% { transform: translate(-2px, 1px); }
+  100% { transform: translate(0, 0); }
+}
+
+.animate-screenShake {
+  animation: screenShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.animate-scaleUp {
+  animation: scaleUp 0.18s ease-out forwards;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Respect prefers-reduced-motion across the portfolio */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .cyber-card,
+  .btn-cyber-primary,
+  .btn-cyber-ghost {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .animate-screenShake,
+  .animate-slideInRight {
+    animation: none !important;
+  }
+}
