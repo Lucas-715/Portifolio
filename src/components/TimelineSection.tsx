@@ -6,13 +6,9 @@ import {
   X,
   ChevronRight,
   Info,
-  Clock,
-  Users,
-  Award,
 } from 'lucide-react';
 import {
   TIMELINE_ITEMS,
-  TIMELINE_HIGHLIGHTS,
   TimelineItem,
 } from '../data/portfolioData';
 
@@ -42,22 +38,9 @@ export const TimelineSection: React.FC = () => {
               Trajetória Acadêmica e Atuação Universitária
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl font-sans">
-              Formação técnica integrada no IFMA, graduação em Engenharia de Software na UFC e mais de 400 horas comprovadas de extensão universitária e liderança acadêmica.
+              Formação técnica integrada no IFMA, graduação em Engenharia de Software na UFC e extensão universitária.
             </p>
           </div>
-        </div>
-
-        {/* Highlight Metrics Chips */}
-        <div className="flex flex-wrap items-center gap-2.5 pt-1">
-          {TIMELINE_HIGHLIGHTS.map((chip) => (
-            <div
-              key={chip}
-              className="px-3.5 py-1.5 rounded-full bg-cyan-950/70 border border-cyan-400/40 text-cyan-200 text-xs font-mono font-semibold flex items-center gap-2 shadow-[0_0_15px_rgba(0,240,255,0.12)]"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f0ff]" />
-              <span>{chip}</span>
-            </div>
-          ))}
         </div>
 
         {/* =========================================================================
