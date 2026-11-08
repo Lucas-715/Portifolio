@@ -37,6 +37,7 @@ export interface MainProject {
   problem: string;
   approachTitle: string;
   approach: string[];
+  myContribution?: string[];
   pillars?: ProjectPillar[];
   comparisonTable?: ComparisonRow[];
   comparisonTableSevere?: ComparisonRow[];
@@ -78,6 +79,13 @@ export const MAIN_PROJECTS: MainProject[] = [
     approach: [
       'Comparação entre treinamento centralizado, FedAvg e FedProx com particionamento natural (indivíduos reais) e heterogeneidade sintética via Dirichlet (α = 0,15).',
       'Avaliação estrita em 9 voluntários independentes de teste não vistos, com múltiplas sementes e desvio padrão (sementes 42 a 46) e 15 rodadas de comunicação.',
+    ],
+    myContribution: [
+      'Arquitetura e implementação completa do pipeline federado em PyTorch (simulação de clientes, agregação e rotinas locais de otimização).',
+      'Implementação dos algoritmos FedAvg e FedProx com suporte a particionamento natural (por voluntário) e sintético não-IID (Dirichlet α=0,15).',
+      'Desenvolvimento do pipeline de explicabilidade (XAI) com Integrated Gradients, computando a similaridade de cosseno entre gradientes atribuídos locais e globais.',
+      'Estruturação do protocolo experimental rigoroso com 5 sementes determinísticas (42 a 46) e validação estatística com teste pareado t de Student com correção de Bonferroni.',
+      'Criação de suite de testes unitários com pytest e painel interativo de telemetria em Streamlit.',
     ],
     comparisonTable: [
       {
@@ -186,6 +194,13 @@ export const MAIN_PROJECTS: MainProject[] = [
       'Separação estrita entre a camada de regras canônicas de estado, o protocolo de debate e a verificação factual de afirmações.',
       'Ações validadas por motor determinístico (python-chess e GoEngine) antes de serem registradas no Event Store em memória.',
     ],
+    myContribution: [
+      'Projeto e arquitetura do backend em FastAPI desacoplando regras canônicas determinísticas da camada de geração por LLMs (Gemini API).',
+      'Implementação do motor de validação de regras com python-chess e GoEngine: lances inválidos são validados e rejeitados antes do registro.',
+      'Modelagem da estrutura de transições de estado e persistência de lances e argumentos em SQLite.',
+      'Definição da dinâmica de debate multiagente delimitada por rodadas (Proponente vs Crítico vs Árbitro).',
+      'Testes unitários automatizados com pytest validando que o LLM não tem permissão de alterar o estado do tabuleiro sem aprovação do motor.',
+    ],
     pillars: [
       {
         title: '01. Validade Formal (Regras Canônicas)',
@@ -193,7 +208,7 @@ export const MAIN_PROJECTS: MainProject[] = [
         status: 'implementado',
         statusLabel: '✓ implementado',
         description:
-          'Ações são restritas por transições canônicas de estado. O LLM não pode inventar lances ou violar regras do tabuleiro.',
+          'Ações são restritas por transições canônicas de estado. Lances inválidos são rejeitados pelo motor antes do registro, impedindo violações das regras do tabuleiro.',
       },
       {
         title: '02. Dinâmica de Debate Estruturado',
@@ -247,17 +262,24 @@ export const MAIN_PROJECTS: MainProject[] = [
     statusBadge: 'PROTÓTIPO AVANÇADO',
     shortPhrase:
       'Plataforma para catalogação e comparação de preços de jogos para PC (protótipo avançado com Next.js, Prisma e dados de demonstração).',
-    proofLine: 'Rotas, catálogo e autenticação navegáveis com dados de demonstração',
+    proofLine: 'Telas navegáveis com dados de demonstração · Autenticação e persistência em andamento',
     cardTags: ['Next.js', 'TypeScript', 'Prisma ORM', 'NextAuth'],
     featuredImage: '/projects/gamehunter/dashboard.png',
     summary:
-      'O GameHunter é uma plataforma (atualmente em estágio de protótipo avançado / em desenvolvimento) criada para ajudar jogadores de PC a encontrarem o melhor momento de compra e organizarem seu catálogo de jogos com Next.js, Prisma ORM e NextAuth.',
+      'O GameHunter é uma plataforma criada para ajudar jogadores de PC a encontrarem o melhor momento de compra e organizarem seu catálogo de jogos com Next.js, Prisma ORM e NextAuth. Atualmente possui telas de catálogo e wishlist 100% navegáveis com dados de demonstração, enquanto a camada de autenticação e persistência está em desenvolvimento.',
     problem:
       'Consolidar catálogo de jogos e interface de usuário com dados de demonstração e autenticação resiliente.',
     approachTitle: 'Integração & Arquitetura Web',
     approach: [
       'Deploy via OpenNext no Cloudflare Workers com dados de demonstração; catálogo e persistência local via Prisma e SQLite.',
-      'Rotas de catálogo, busca, autenticação e wishlist 100% navegáveis com dados de demonstração.',
+      'Rotas de catálogo, busca e wishlist 100% navegáveis com dados mockados de demonstração.',
+    ],
+    myContribution: [
+      'Desenvolvimento do frontend completo em Next.js (App Router), TypeScript e Tailwind CSS.',
+      'Implementação de rotas navegáveis de catálogo, filtros de busca, comparador de preços e wishlist utilizando dados mockados de demonstração.',
+      'Modelagem relacional do catálogo e perfis com Prisma ORM e banco de dados SQLite.',
+      'Configuração de deploy estático/edge no Cloudflare Workers via OpenNext.',
+      'Arquitetura da camada de autenticação com NextAuth (sessões e favoritos persistentes em andamento).',
     ],
     pillars: [
       {
@@ -396,7 +418,7 @@ export const TIMELINE_ITEMS: TimelineItem[] = [
     endYear: 2027,
     isCurrent: true,
     resultLine: 'Arquitetura modular, testes automatizados (pytest), qualidade de código e inteligência artificial.',
-    badge: 'Graduação Presencial · Em andamento',
+    badge: 'Graduação Presencial · Conclusão: Dez/2027',
     details: {
       workload: 'Bacharelado em Engenharia de Software',
       description:

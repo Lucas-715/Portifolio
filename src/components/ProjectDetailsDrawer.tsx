@@ -160,12 +160,12 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
             aria-label="Fechar painel de detalhes"
             className="p-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/10 focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Drawer Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 text-slate-200">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 [&_img]:max-w-full [&_*]:min-w-0 space-y-6 text-slate-200">
           {/* Summary & Proof Line */}
           <div className="p-4 rounded-2xl bg-black/50 border border-white/[0.08] space-y-2">
             <p className="text-sm font-sans text-slate-200 leading-relaxed">
@@ -198,30 +198,30 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                       {project.screenshots[activeGalleryIdx].title}
                     </span>
                     <span className="p-1 rounded-md bg-black/60 text-white flex items-center gap-1 text-[11px] font-mono">
-                      <Maximize2 className="w-3 h-3 text-cyan-300" /> Ampliar
+                      <Maximize2 className="w-3 h-3 text-cyan-300" aria-hidden="true" /> Ampliar
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Thumbnails */}
-              <div className="flex gap-2">
-                {project.screenshots.map((s, idx) => (
-                  <button
-                    key={s.url}
-                    onClick={() => setActiveGalleryIdx(idx)}
-                    className={`flex-1 p-1.5 rounded-lg border text-left transition-all cursor-pointer ${
-                      activeGalleryIdx === idx
-                        ? 'border-cyan-400 bg-cyan-500/20 text-cyan-200 font-bold'
-                        : 'border-white/10 bg-black/40 text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <span className="block text-xs font-mono truncate">
-                      {idx + 1}. {s.title.split('(')[0]}
-                    </span>
-                  </button>
-                ))}
-              </div>
+          {/* Thumbnails */}
+          <div className="flex flex-wrap gap-2">
+            {project.screenshots.map((s, idx) => (
+              <button
+                key={s.url}
+                onClick={() => setActiveGalleryIdx(idx)}
+                aria-label={`Ver captura ${idx + 1}: ${s.title}`}
+                className={`flex-1 min-w-[130px] p-1.5 rounded-lg border text-left transition-all cursor-pointer ${activeGalleryIdx === idx
+                    ? 'border-cyan-400 bg-cyan-500/20 text-cyan-200 font-bold'
+                    : 'border-white/10 bg-black/40 text-slate-400 hover:text-slate-200'
+                  }`}
+              >
+                <span className="block text-xs font-mono truncate">
+                  {idx + 1}. {s.title.split('(')[0]}
+                </span>
+              </button>
+            ))}
+          </div>
             </div>
           )}
 
@@ -246,6 +246,24 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Minha Contribuição Individual & Decisões Técnicas */}
+          {project.myContribution && project.myContribution.length > 0 && (
+            <div className="p-4 rounded-2xl bg-cyan-950/20 border border-cyan-500/30 space-y-2.5">
+              <div className="flex items-center gap-2 text-xs font-mono uppercase text-cyan-300 font-bold">
+                <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" aria-hidden="true" />
+                <span>Minha Contribuição & Decisões de Engenharia</span>
+              </div>
+              <ul className="space-y-2 text-xs sm:text-sm text-slate-200 font-sans leading-relaxed">
+                {project.myContribution.map((contrib, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-cyan-400 font-mono text-xs mt-0.5 shrink-0" aria-hidden="true">▸</span>
+                    <span>{contrib}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* 1. SE FOR FEDERATED-XAI-LAB: TABELA / CURVA / NOTA ESTATÍSTICA / XAI */}
           {project.id === 'federated-xai-lab' && (
@@ -276,24 +294,22 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setFlTab('table')}
-                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                      flTab === 'table'
+                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${flTab === 'table'
                         ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 font-bold'
                         : 'text-slate-400 hover:text-white border border-transparent'
-                    }`}
+                      }`}
                   >
-                    <TableIcon className="w-3.5 h-3.5 text-cyan-400" />
+                    <TableIcon className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" />
                     <span>Tabela de Resultados</span>
                   </button>
                   <button
                     onClick={() => setFlTab('chart')}
-                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                      flTab === 'chart'
+                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${flTab === 'chart'
                         ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 font-bold'
                         : 'text-slate-400 hover:text-white border border-transparent'
-                    }`}
+                      }`}
                   >
-                    <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                    <TrendingUp className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" />
                     <span>Curva de Convergência (15 Rodadas)</span>
                   </button>
                 </div>
@@ -303,21 +319,19 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                   <span className="text-slate-400">Cenário:</span>
                   <button
                     onClick={() => setFlScenario('natural')}
-                    className={`px-2 py-0.5 rounded text-xs transition-colors cursor-pointer ${
-                      flScenario === 'natural'
+                    className={`px-2 py-0.5 rounded text-xs transition-colors cursor-pointer ${flScenario === 'natural'
                         ? 'bg-white/10 text-cyan-300 border border-cyan-400/40 font-bold'
                         : 'text-slate-400 hover:text-slate-200 border border-transparent'
-                    }`}
+                      }`}
                   >
                     Natural
                   </button>
                   <button
                     onClick={() => setFlScenario('severe')}
-                    className={`px-2 py-0.5 rounded text-xs transition-colors cursor-pointer ${
-                      flScenario === 'severe'
+                    className={`px-2 py-0.5 rounded text-xs transition-colors cursor-pointer ${flScenario === 'severe'
                         ? 'bg-white/10 text-cyan-300 border border-cyan-400/40 font-bold'
                         : 'text-slate-400 hover:text-slate-200 border border-transparent'
-                    }`}
+                      }`}
                   >
                     Dirichlet α=0,15
                   </button>
@@ -326,8 +340,8 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
 
               {/* Table or Chart View */}
               {flTab === 'table' ? (
-                <div className="rounded-xl border border-white/10 overflow-hidden">
-                  <table className="w-full text-xs font-mono text-left">
+                <div className="rounded-xl border border-white/10 overflow-x-auto max-w-full">
+                  <table className="min-w-full text-xs font-mono text-left">
                     <thead className="bg-black/80 text-slate-300 uppercase text-[10px] border-b border-white/10">
                       <tr>
                         <th className="py-2.5 px-3">Abordagem</th>
@@ -465,7 +479,7 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
 
               {/* Statistical Note (Versão curta sem Wilcoxon) */}
               <p className="text-xs font-mono text-slate-300 leading-relaxed italic bg-black/40 p-3 rounded-xl border border-white/5">
-                * Nota estatística: FedAvg × FedProx sem evidência de diferença (5 sementes; teste pareado t de Student com p = 0,0184 e correção de Bonferroni com limiar de 0,0125). Centralizado apresentou maior variância entre sementes. Detalhamento completo no README.
+                {flScenario === 'natural' ? '* Nota estatística (cenário natural): FedAvg × FedProx sem evidência de diferença (5 sementes; teste pareado t de Student com p = 0,0184 e correção de Bonferroni com limiar de 0,0125). Centralizado apresentou maior variância entre sementes. Detalhamento completo no README.' : '* Nota estatística: o teste pareado (p = 0,0184; Bonferroni 0,0125) refere-se ao cenário natural. Para Dirichlet (α = 0,15), consulte o detalhamento no README.'}
               </p>
 
               {/* Integrated Gradients (XAI) Box */}
@@ -480,8 +494,8 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                 </div>
                 <p className="text-xs text-slate-300">
                   {flScenario === 'natural'
-                    ? 'No particionamento natural por voluntário, os modelos federados mantêm alta estabilidade explicativa, com concordância de 89,2% entre vetores de atribuição locais e globais.'
-                    : 'Em heterogeneidade severa via Dirichlet (α = 0,15), a concordância cai para 61,4%, com clientes divergindo ao priorizar canais pontuais de sensores.'}
+                    ? 'Similaridade de cosseno (0 a 1) entre os vetores de atribuição do Integrated Gradients locais e globais. No particionamento natural por voluntário, o valor de 0,892 indica explicações bem alinhadas.'
+                    : 'Mesma métrica (cosseno entre atribuições locais e globais). Em heterogeneidade severa via Dirichlet (α = 0,15), o valor cai para 0,614, com clientes divergindo ao priorizar canais pontuais de sensores.'}
                 </p>
               </div>
             </div>
@@ -502,16 +516,15 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                     <div className="flex items-center justify-between text-xs font-mono font-bold">
                       <span className="text-white">{pillar.title}</span>
                       <span
-                        className={`text-[11px] px-2 py-0.5 rounded flex items-center gap-1 ${
-                          pillar.status === 'implementado'
+                        className={`text-[11px] px-2 py-0.5 rounded flex items-center gap-1 ${pillar.status === 'implementado'
                             ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                             : pillar.status === 'em_andamento'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                            : 'bg-white/[0.05] text-slate-400 border border-white/10'
-                        }`}
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                              : 'bg-white/[0.05] text-slate-400 border border-white/10'
+                          }`}
                       >
-                        {pillar.status === 'implementado' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-                        {pillar.status === 'em_andamento' && <Clock className="w-3.5 h-3.5 text-amber-400" />}
+                        {pillar.status === 'implementado' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" />}
+                        {pillar.status === 'em_andamento' && <Clock className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />}
                         {pillar.status === 'planejado' && <CircleDot className="w-3.5 h-3.5 text-slate-400" />}
                         <span>{pillar.statusLabel}</span>
                       </span>
@@ -552,7 +565,7 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
               rel="noopener noreferrer"
               className="btn-cyber-primary px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 font-mono font-bold"
             >
-              <Github className="w-3.5 h-3.5" />
+              <Github className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Ver no GitHub</span>
             </a>
 
@@ -563,7 +576,7 @@ export const ProjectDetailsDrawer: React.FC<ProjectDetailsDrawerProps> = ({
                 rel="noopener noreferrer"
                 className="btn-cyber-ghost px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 border border-cyan-500/30 text-cyan-200 font-mono"
               >
-                <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                <ExternalLink className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" />
                 <span>{project.demoLabel || 'Ver Demonstração'}</span>
               </a>
             )}

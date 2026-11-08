@@ -71,25 +71,20 @@ export const TimelineSection: React.FC = () => {
                 return (
                   <div
                     key={item.id}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${item.role} no ${item.institution}`}
-                    onClick={() => setSelectedItem(isSelected ? null : item)}
-                    onKeyDown={(e) => handleKeyDownItem(e, item)}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 ${
+                    className={`p-5 rounded-2xl border transition-all flex flex-col justify-between relative overflow-hidden ${
                       isSelected
                         ? 'border-cyan-400 bg-cyan-500/15 shadow-[0_0_25px_rgba(0,240,255,0.25)]'
                         : 'border-cyan-500/25 bg-black/50 hover:border-cyan-400/60 hover:bg-cyan-950/30'
                     }`}
                   >
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
                         <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                          {item.id === 'ifma' ? '2020 – 2022' : '2023 – Atual'}
+                          {item.id === 'ifma' ? '2020 – 2022' : '2023 – Atual (Prev. Dez/2027)'}
                         </span>
                         {item.isCurrent ? (
                           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
                             <span>EM ANDAMENTO</span>
                           </span>
                         ) : (
@@ -115,9 +110,16 @@ export const TimelineSection: React.FC = () => {
 
                     <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between mt-3 text-xs font-mono">
                       <span className="text-slate-400 text-[11px]">{item.badge}</span>
-                      <span className="text-cyan-300 flex items-center gap-1 font-bold">
-                        {isSelected ? 'Ocultar' : 'Detalhes'} <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedItem(isSelected ? null : item)}
+                        aria-expanded={isSelected}
+                        aria-label={`${isSelected ? 'Ocultar detalhes de' : 'Ver detalhes de'} ${item.role}`}
+                        className="text-cyan-300 hover:text-white flex items-center gap-1 font-bold cursor-pointer transition-colors"
+                      >
+                        <span>{isSelected ? 'Ocultar' : 'Detalhes'}</span>
+                        <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -142,12 +144,7 @@ export const TimelineSection: React.FC = () => {
                 return (
                   <div
                     key={item.id}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${item.role} no ${item.institution}`}
-                    onClick={() => setSelectedItem(isSelected ? null : item)}
-                    onKeyDown={(e) => handleKeyDownItem(e, item)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden focus-visible:ring-2 focus-visible:ring-violet-400 ${
+                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between relative overflow-hidden ${
                       isSelected
                         ? 'border-violet-400 bg-violet-500/20 shadow-[0_0_25px_rgba(189,0,255,0.25)]'
                         : 'border-violet-500/25 bg-black/50 hover:border-violet-400/60 hover:bg-violet-950/30'
@@ -160,7 +157,7 @@ export const TimelineSection: React.FC = () => {
                         </span>
                         {item.isCurrent ? (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-400/20 text-violet-300 border border-violet-400/50 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" aria-hidden="true" />
                             <span>ATUAL</span>
                           </span>
                         ) : (
@@ -192,13 +189,13 @@ export const TimelineSection: React.FC = () => {
                               href={link.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
+                              aria-label={`${link.label} (${link.type === 'instagram' ? 'Instagram' : 'Website'})`}
                               className="px-2 py-0.5 rounded-md bg-white/[0.04] hover:bg-violet-500/25 text-slate-300 hover:text-white border border-white/[0.08] hover:border-violet-400/50 text-[10px] font-mono flex items-center gap-1 transition-all"
                             >
                               {link.type === 'instagram' ? (
-                                <Instagram className="w-2.5 h-2.5 text-pink-400 shrink-0" />
+                                <Instagram className="w-2.5 h-2.5 text-pink-400 shrink-0" aria-hidden="true" />
                               ) : (
-                                <Globe className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+                                <Globe className="w-2.5 h-2.5 text-cyan-400 shrink-0" aria-hidden="true" />
                               )}
                               <span>{link.label}</span>
                             </a>
@@ -211,9 +208,16 @@ export const TimelineSection: React.FC = () => {
                       <span className="text-slate-400 text-[10px] truncate max-w-[120px]">
                         {item.details.highlight || item.badge}
                       </span>
-                      <span className="text-violet-300 flex items-center gap-1 text-[11px] font-bold shrink-0">
-                        {isSelected ? 'Ocultar' : 'Ver mais'} <ChevronRight className="w-3 h-3" />
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedItem(isSelected ? null : item)}
+                        aria-expanded={isSelected}
+                        aria-label={`${isSelected ? 'Ocultar detalhes de' : 'Ver mais detalhes de'} ${item.role}`}
+                        className="text-violet-300 hover:text-white flex items-center gap-1 text-[11px] font-bold shrink-0 cursor-pointer transition-colors"
+                      >
+                        <span>{isSelected ? 'Ocultar' : 'Ver mais'}</span>
+                        <ChevronRight className="w-3 h-3" aria-hidden="true" />
+                      </button>
                     </div>
                   </div>
                 );

@@ -6,6 +6,8 @@ import {
   Zap,
   Crosshair,
   AlertTriangle,
+  MessageSquare,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface QuickLink {
@@ -30,6 +32,106 @@ const SECTIONS_CONFIG = [
   { id: 'formacao', side: 'right', phrase: 'Formação: IFMA, Engenharia na UFC e extensão!' },
   { id: 'contato', side: 'right', phrase: 'Bora conversar? Canais abertos!' },
 ];
+
+interface DialogueOption {
+  label: string;
+  nextNodeId?: string;
+  action?: 'root' | 'close' | 'menu';
+}
+
+interface DialogueNode {
+  id: string;
+  speakerPrompt: string;
+  options: DialogueOption[];
+}
+
+const DIALOGUE_NODES: Record<string, DialogueNode> = {
+  root: {
+    id: 'root',
+    speakerPrompt: 'Pausa rápida: qual é a sua vibe?',
+    options: [
+      { label: '🎮 Jogos', nextNodeId: 'jogos' },
+      { label: '⚡ Tecnologia', nextNodeId: 'tecnologia' },
+      { label: '💡 Curiosidades', nextNodeId: 'curiosidades' },
+      { label: '🧭 Só explorando', nextNodeId: 'explorando' },
+    ],
+  },
+  jogos: {
+    id: 'jogos',
+    speakerPrompt: 'Boa. Você prefere pensar cada movimento ou apertar todos os botões e confiar?',
+    options: [
+      { label: '♟️ Estratégia', nextNodeId: 'jogos_estrategia' },
+      { label: '💥 Caos controlado', nextNodeId: 'jogos_caos' },
+      { label: '🔄 Outro assunto', action: 'root' },
+    ],
+  },
+  jogos_estrategia: {
+    id: 'jogos_estrategia',
+    speakerPrompt: 'Gosto assim. Cálculo frio, precisão de ponteiro e vitória por xeque-mate. O Lucas também curte xadrez e jogos táticos!',
+    options: [
+      { label: '🔄 Outro assunto', action: 'root' },
+      { label: '👋 Até mais', action: 'close' },
+    ],
+  },
+  jogos_caos: {
+    id: 'jogos_caos',
+    speakerPrompt: 'Respeito! Às vezes o melhor algoritmo é a força bruta com estilo e reflexos rápidos. Se quebrar algo, a gente chama de feature!',
+    options: [
+      { label: '🔄 Outro assunto', action: 'root' },
+      { label: '👋 Até mais', action: 'close' },
+    ],
+  },
+  tecnologia: {
+    id: 'tecnologia',
+    speakerPrompt: 'Você é do time que lê a documentação ou só abre quando o código reclama?',
+    options: [
+      { label: '📖 Leio primeiro', nextNodeId: 'tec_leio' },
+      { label: '🔥 Depende do tamanho do erro', nextNodeId: 'tec_erro' },
+      { label: '🔄 Outro assunto', action: 'root' },
+    ],
+  },
+  tec_leio: {
+    id: 'tec_leio',
+    speakerPrompt: 'Raridade no ecossistema! Seus deploys devem ser os mais pacíficos da história. Respeito máximo pela leitura de documentação!',
+    options: [
+      { label: '🔄 Outro assunto', action: 'root' },
+      { label: '👋 Até mais', action: 'close' },
+    ],
+  },
+  tec_erro: {
+    id: 'tec_erro',
+    speakerPrompt: 'Sinceridade de alto nível! 90% dos devs olham o stack trace primeiro e a doc depois. O importante é o commit compilar!',
+    options: [
+      { label: '🔄 Outro assunto', action: 'root' },
+      { label: '👋 Até mais', action: 'close' },
+    ],
+  },
+  curiosidades: {
+    id: 'curiosidades',
+    speakerPrompt: 'Sabia que eu fui forjado com React, Tailwind e Web Audio API? E que tenho sensores para flagrar quem inspeciona o código?',
+    options: [
+      { label: '🤖 Como você funciona?', nextNodeId: 'curiosidade_detalhes' },
+      { label: '🔄 Outro assunto', action: 'root' },
+      { label: '👋 Até mais', action: 'close' },
+    ],
+  },
+  curiosidade_detalhes: {
+    id: 'curiosidade_detalhes',
+    speakerPrompt: 'Tenho física inercial de voo, rastreio ocular por trigonometria e síntese sonora procedural no navegador. Zero dependências externas pesadas!',
+    options: [
+      { label: '🔄 Outro assunto', action: 'root' },
+      { label: '👋 Até mais', action: 'close' },
+    ],
+  },
+  explorando: {
+    id: 'explorando',
+    speakerPrompt: 'Fica à vontade. Eu fico por aqui se precisar de algo.',
+    options: [
+      { label: '🔄 Outro assunto', action: 'root' },
+      { label: '👋 Até mais', action: 'close' },
+    ],
+  },
+};
 
 const COMPLAINT_PHRASES = [
   'Ei! Não me puxa assim!',
@@ -61,6 +163,29 @@ export const LuckyAssistant: React.FC = () => {
   const [followMouse, setFollowMouse] = useState(false);
   const [isPreparingFollow, setIsPreparingFollow] = useState(false);
   const [tiltAngle, setTiltAngle] = useState(0);
+
+  // 1. Reposicionar ao rolar (desligado por padrão, persistido no localStorage)
+  const [repositionOnScroll, setRepositionOnScroll] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('lucky_reposition_on_scroll') === 'true';
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
+
+  // 2. Sistema de Conversação iniciado pelo visitante
+  const [isConversationActive, setIsConversationActive] = useState(false);
+  const [currentDialogueNodeId, setCurrentDialogueNodeId] = useState<string>('root');
+  const [displayedDialogueText, setDisplayedDialogueText] = useState<string>('');
+  const [isTypingDialogue, setIsTypingDialogue] = useState<boolean>(false);
+  const dialogueTypewriterRef = useRef<number | null>(null);
+
+  // 3. Referências para restaurar posições antes de voos e corridas
+  const savedBeforeFlightRef = useRef<{ position: { x: number; y: number }; dockSide: 'right' | 'left' | 'free' } | null>(null);
+  const savedBeforeSprintRef = useRef<{ position: { x: number; y: number }; dockSide: 'right' | 'left' | 'free' } | null>(null);
 
   // Dash & Sprint state (iFood delivery & Duolingo streak routines)
   const [dashState, setDashState] = useState<'idle' | 'dashing_out' | 'away' | 'dashing_in'>('idle');
@@ -379,47 +504,25 @@ export const LuckyAssistant: React.FC = () => {
   }, []);
 
   // Callback de conclusão de ações prioritárias (iFood, Duolingo, etc.):
-  // "a prioridade é a primeira ação, ela deve ser concluida e se a outra tiver como ai continua, caso contrario só pula"
+  // Rolar a página não deve iniciar conversas nem deixar mensagens pendentes na fila
   const handleActionFinished = useCallback(() => {
     isSprintActiveRef.current = false;
-
-    const pendingSec = pendingScrollSectionRef.current;
     pendingScrollSectionRef.current = null;
+  }, []);
 
-    if (pendingSec && pendingSec !== 'top') {
-      const currentNow = getActiveSectionId();
-      // Verifica se o usuário AINDA ESTÁ na mesma seção que rolou enquanto o robô estava ocupado
-      if (currentNow === pendingSec) {
-        const secConfig = SECTIONS_CONFIG.find((s) => s.id === currentNow);
-        const now = Date.now();
-        const lastSpoken = sectionCooldownRef.current[currentNow] || 0;
-
-        if (now - lastSpoken > 8500 && secConfig) {
-          // "se a outra tiver como aí continua": aguarda 1.2s para leitura e comenta
-          setTimeout(() => {
-            if (!isSprintActiveRef.current && dashState === 'idle') {
-              sectionCooldownRef.current[currentNow] = Date.now();
-              showDecryptingBubble(secConfig.phrase, 5500);
-            }
-          }, 1200);
-          return;
-        }
-      }
-      // "caso contrário só pula": se o usuário já mudou de seção ou rolou rapidamente, simplesmente pula
-    }
-  }, [getActiveSectionId, dashState, showDecryptingBubble]);
-
-  // SCROLL-AWARE SIDE-SWITCHING & IMMERSIVE COMMENTARY
+  // SCROLL-AWARE SIDE-SWITCHING (DESATIVADO POR PADRÃO, SEM COMENTÁRIOS AUTOMÁTICOS)
   const lastSectionRef = useRef<string | null>(null);
-  const sectionCooldownRef = useRef<{ [key: string]: number }>({});
 
   useEffect(() => {
     const handleScrollWatcher = () => {
+      // Se a opção estiver desligada (padrão), o Lucky NUNCA troca de lado ao rolar e mantém sua posição!
+      if (!repositionOnScroll) return;
+
       const currentSec = getActiveSectionId();
       const secConfig = SECTIONS_CONFIG.find((s) => s.id === currentSec);
 
-      // Ajusta o lado do robô suavemente para acompanhar a leitura
-      if (secConfig && currentSec !== lastSectionRef.current) {
+      // Ajusta o lado do robô suavemente apenas se reposicionamento estiver ligado e ele não estiver em arrasto livre
+      if (secConfig && currentSec !== lastSectionRef.current && dockSide !== 'free') {
         lastSectionRef.current = currentSec;
 
         if (secConfig.side === 'left') {
@@ -432,44 +535,94 @@ export const LuckyAssistant: React.FC = () => {
           setTimeout(() => setTiltAngle(0), 450);
         }
       }
-
-      // REGRA DE PRIORIDADE:
-      // Se o robô já estiver executando uma ação (iFood, Duolingo, modo drone, etc.):
-      // A primeira ação é prioridade absoluta e NUNCA é interrompida!
-      const isBusy =
-        followMouse ||
-        isDraggingRef.current ||
-        dashState !== 'idle' ||
-        isSprintActiveRef.current ||
-        deathRayState !== 'idle';
-
-      if (isBusy) {
-        // Armazena a seção rolada para avaliar quando a primeira ação terminar
-        pendingScrollSectionRef.current = currentSec;
-        return;
-      }
-
-      // Robô livre: agenda o comentário com debounce
-      if (scrollDebounceTimerRef.current) {
-        clearTimeout(scrollDebounceTimerRef.current);
-      }
-      scrollDebounceTimerRef.current = window.setTimeout(() => {
-        if (isSprintActiveRef.current || dashState !== 'idle') return;
-        const now = Date.now();
-        const lastSpoken = sectionCooldownRef.current[currentSec] || 0;
-        if (now - lastSpoken > 9500 && currentSec !== 'top' && secConfig) {
-          sectionCooldownRef.current[currentSec] = now;
-          showDecryptingBubble(secConfig.phrase, 5500);
-        }
-      }, 450);
     };
 
     window.addEventListener('scroll', handleScrollWatcher, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScrollWatcher);
-      if (scrollDebounceTimerRef.current) clearTimeout(scrollDebounceTimerRef.current);
     };
-  }, [followMouse, isPreparingFollow, dashState, getActiveSectionId, showDecryptingBubble]);
+  }, [repositionOnScroll, getActiveSectionId, dockSide]);
+
+  // Alternância da preferência de reposicionamento ao rolar (com persistência no localStorage)
+  const toggleRepositionOnScroll = useCallback(() => {
+    setRepositionOnScroll((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('lucky_reposition_on_scroll', String(next));
+      } catch {
+        /* ignore */
+      }
+      playCuteChirpMelody(1);
+      return next;
+    });
+  }, [playCuteChirpMelody]);
+
+  // Utilitários de digitação para a conversa iniciada pelo visitante
+  const startTypingDialogue = useCallback(
+    (text: string) => {
+      if (dialogueTypewriterRef.current) {
+        clearInterval(dialogueTypewriterRef.current);
+        dialogueTypewriterRef.current = null;
+      }
+      setDisplayedDialogueText('');
+      setIsTypingDialogue(true);
+
+      let charIdx = 0;
+      const timer = window.setInterval(() => {
+        charIdx += 2;
+        if (charIdx >= text.length) {
+          setDisplayedDialogueText(text);
+          setIsTypingDialogue(false);
+          clearInterval(timer);
+          dialogueTypewriterRef.current = null;
+        } else {
+          setDisplayedDialogueText(text.slice(0, charIdx));
+          playTypewriterClick();
+        }
+      }, 20);
+
+      dialogueTypewriterRef.current = timer;
+    },
+    [playTypewriterClick]
+  );
+
+  const handleStartConversation = useCallback(() => {
+    setIsConversationActive(true);
+    setCurrentDialogueNodeId('root');
+    setEyeState('happy');
+    playCuteChirpMelody(2);
+    setTimeout(() => setEyeState('normal'), 1200);
+    const rootNode = DIALOGUE_NODES['root'];
+    startTypingDialogue(rootNode.speakerPrompt);
+  }, [playCuteChirpMelody, startTypingDialogue]);
+
+  const handleSelectDialogueOption = useCallback(
+    (option: DialogueOption) => {
+      playCuteChirpMelody(1);
+
+      if (option.action === 'close') {
+        setIsConversationActive(false);
+        setIsOpen(false);
+        setEyeState('heart');
+        setTimeout(() => setEyeState('normal'), 2200);
+        return;
+      }
+
+      if (option.action === 'menu') {
+        setIsConversationActive(false);
+        return;
+      }
+
+      const nextId = option.action === 'root' ? 'root' : option.nextNodeId;
+      if (nextId && DIALOGUE_NODES[nextId]) {
+        setCurrentDialogueNodeId(nextId);
+        setEyeState('happy');
+        setTimeout(() => setEyeState('normal'), 1000);
+        startTypingDialogue(DIALOGUE_NODES[nextId].speakerPrompt);
+      }
+    },
+    [playCuteChirpMelody, startTypingDialogue]
+  );
 
   // REAÇÃO AO MODO INSPECIONAR / DEVTOOLS (Sabe exatamente o que o usuário está fazendo)
   useEffect(() => {
@@ -527,19 +680,6 @@ export const LuckyAssistant: React.FC = () => {
       }, 300);
     };
 
-    // 4. Console getter probe: acionado na avaliação do console pelo navegador
-    const element = new Image();
-    Object.defineProperty(element, 'id', {
-      get: function () {
-        triggerInspectSpeech();
-        return 'lucky-inspector';
-      },
-    });
-
-    const consoleProbe = setInterval(() => {
-      console.debug('%c', element);
-    }, 2500);
-
     window.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('keydown', handleInspectKeys);
     window.addEventListener('resize', handleResize);
@@ -548,7 +688,6 @@ export const LuckyAssistant: React.FC = () => {
       window.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('keydown', handleInspectKeys);
       window.removeEventListener('resize', handleResize);
-      clearInterval(consoleProbe);
     };
   }, [showBubble, playCuteChirpMelody]);
 
@@ -561,8 +700,17 @@ export const LuckyAssistant: React.FC = () => {
     setIsPreparingFollow(false);
     setFollowMouse(false);
     setTiltAngle(0);
-    setDockSide('right');
-    setPosition({ x: 24, y: 24 });
+
+    // Retorna para a posição anterior ao voo do drone
+    if (savedBeforeFlightRef.current) {
+      setPosition(savedBeforeFlightRef.current.position);
+      setDockSide(savedBeforeFlightRef.current.dockSide);
+      savedBeforeFlightRef.current = null;
+    } else {
+      setDockSide('right');
+      setPosition({ x: 24, y: 24 });
+    }
+
     showBubble('Modo drone desativado!', 3500);
     playCuteChirpMelody(2);
   }, [showBubble, playCuteChirpMelody]);
@@ -574,8 +722,15 @@ export const LuckyAssistant: React.FC = () => {
       return;
     }
 
+    // Salva a posição exata antes do voo
+    savedBeforeFlightRef.current = {
+      position: { ...position },
+      dockSide,
+    };
+
     // 1. Fecha o menu e fala primeiro com o robô completamente estático na posição atual
     setIsOpen(false);
+    setIsConversationActive(false);
     setIsPreparingFollow(true);
     playCuteChirpMelody(2);
     setEyeState('happy');
@@ -610,11 +765,17 @@ export const LuckyAssistant: React.FC = () => {
       setIsPreparingFollow(false);
       prepareFollowTimeoutRef.current = null;
     }, totalWaitTime);
-  }, [followMouse, isPreparingFollow, stopFollowing, playCuteChirpMelody, showBubble]);
+  }, [followMouse, isPreparingFollow, stopFollowing, position, dockSide, playCuteChirpMelody, showBubble]);
 
   // Rotinas de corrida / sumiço do robô: iFood e Duolingo (com áudio e falas reorganizados e concisos)
   const runIFoodSprint = useCallback(() => {
-    if (deathRayState !== 'idle' || followMouse || isDraggingRef.current || dashState !== 'idle') return;
+    if (deathRayState !== 'idle' || followMouse || isDraggingRef.current || dashState !== 'idle' || isConversationActive) return;
+
+    // Salva a posição anterior à corrida
+    savedBeforeSprintRef.current = {
+      position: { ...position },
+      dockSide,
+    };
 
     // Bloqueia qualquer fala ou efeito sonoro de scroll durante toda a corrida
     isSprintActiveRef.current = true;
@@ -625,6 +786,7 @@ export const LuckyAssistant: React.FC = () => {
     setSpeechBubble(null);
 
     setIsOpen(false);
+    setIsConversationActive(false);
     setDashType('ifood');
     setEyeState('blink');
     playCuteChirpMelody(1);
@@ -645,15 +807,28 @@ export const LuckyAssistant: React.FC = () => {
       // Texto conciso e direto
       showBubble('Fui correndo pegar meu iFood! 🛵🍔 Bateria recarregada!', 5000);
 
+      // Retorna para a posição anterior à corrida
+      if (savedBeforeSprintRef.current) {
+        setPosition(savedBeforeSprintRef.current.position);
+        setDockSide(savedBeforeSprintRef.current.dockSide);
+        savedBeforeSprintRef.current = null;
+      }
+
       setTimeout(() => {
         setEyeState((prev) => (prev === 'heart' ? 'normal' : prev));
         handleActionFinished(); // Conclui e avalia se continua ou pula a seção rolada
       }, 5000);
     }, 2850);
-  }, [deathRayState, followMouse, dashState, playCuteChirpMelody, showBubble, handleActionFinished]);
+  }, [deathRayState, followMouse, dashState, isConversationActive, position, dockSide, playCuteChirpMelody, showBubble, handleActionFinished]);
 
   const runDuolingoSprint = useCallback(() => {
-    if (deathRayState !== 'idle' || followMouse || isDraggingRef.current || dashState !== 'idle') return;
+    if (deathRayState !== 'idle' || followMouse || isDraggingRef.current || dashState !== 'idle' || isConversationActive) return;
+
+    // Salva a posição anterior à corrida
+    savedBeforeSprintRef.current = {
+      position: { ...position },
+      dockSide,
+    };
 
     // Bloqueia qualquer fala ou som de scroll
     isSprintActiveRef.current = true;
@@ -664,6 +839,7 @@ export const LuckyAssistant: React.FC = () => {
     setSpeechBubble(null);
 
     setIsOpen(false);
+    setIsConversationActive(false);
     setDashType('duolingo');
     setEyeState('blink');
     playCuteChirpMelody(1);
@@ -684,12 +860,19 @@ export const LuckyAssistant: React.FC = () => {
       // Fala explícita sobre a aula do Duolingo
       showBubble('Fui fazer minha aula de Duolingo! 🦉📚 Ofensiva salva a tempo!', 5000);
 
+      // Retorna para a posição anterior à corrida
+      if (savedBeforeSprintRef.current) {
+        setPosition(savedBeforeSprintRef.current.position);
+        setDockSide(savedBeforeSprintRef.current.dockSide);
+        savedBeforeSprintRef.current = null;
+      }
+
       setTimeout(() => {
         setEyeState((prev) => (prev === 'star' ? 'normal' : prev));
         handleActionFinished(); // Conclui e avalia se continua ou pula a seção rolada
       }, 5000);
     }, 2850);
-  }, [deathRayState, followMouse, dashState, playCuteChirpMelody, showBubble, handleActionFinished]);
+  }, [deathRayState, followMouse, dashState, isConversationActive, position, dockSide, playCuteChirpMelody, showBubble, handleActionFinished]);
 
   // Expor no window para debug/teste rápido se necessário
   useEffect(() => {
@@ -707,7 +890,8 @@ export const LuckyAssistant: React.FC = () => {
         !isPreparingFollow &&
         !isDraggingRef.current &&
         dashState === 'idle' &&
-        !isOpen
+        !isOpen &&
+        !isConversationActive
       ) {
         if (sprintIndex % 2 === 0) {
           runIFoodSprint();
@@ -719,24 +903,29 @@ export const LuckyAssistant: React.FC = () => {
     }, 58000);
 
     return () => clearInterval(interval);
-  }, [deathRayState, followMouse, isPreparingFollow, dashState, isOpen, runIFoodSprint, runDuolingoSprint]);
+  }, [deathRayState, followMouse, isPreparingFollow, dashState, isOpen, isConversationActive, runIFoodSprint, runDuolingoSprint]);
 
-  // Reação ao Bat-Sinal (Easter Egg do Batman)
+  // Ao redimensionar a janela, ajusta a posição APENAS quando necessário para evitar que o Lucky fique fora da tela
   useEffect(() => {
-    const handleBatSignal = () => {
-      if (dashState !== 'idle' || isSprintActiveRef.current) return;
+    const handleWindowResize = () => {
+      setPosition((prev) => {
+        const maxX = Math.max(16, window.innerWidth - 65);
+        const maxY = Math.max(16, window.innerHeight - 65);
+        const clampedX = Math.min(Math.max(16, prev.x), maxX);
+        const clampedY = Math.min(Math.max(16, prev.y), maxY);
 
-      setEyeState('star');
-      playCuteChirpMelody(2);
-      showBubble('O Bat-Sinal foi aceso! 🦇 O Cavaleiro das Trevas vigia este código!', 6000);
-      setTimeout(() => {
-        setEyeState((prev) => (prev === 'star' ? 'normal' : prev));
-      }, 6000);
+        if (clampedX !== prev.x || clampedY !== prev.y) {
+          return { x: clampedX, y: clampedY };
+        }
+        return prev;
+      });
     };
 
-    window.addEventListener('batman:signal', handleBatSignal);
-    return () => window.removeEventListener('batman:signal', handleBatSignal);
-  }, [dashState, playCuteChirpMelody, showBubble]);
+    window.addEventListener('resize', handleWindowResize, { passive: true });
+    return () => window.removeEventListener('resize', handleWindowResize);
+  }, []);
+
+
 
   // Reação ao passar o mouse sobre botões/links de contato: Lucky faz carinha fofa com corações (♥) ou estrelas (★)
   useEffect(() => {
@@ -752,6 +941,7 @@ export const LuckyAssistant: React.FC = () => {
       );
 
       if (contactEl) {
+        if (isConversationActive || isOpen) return;
         if (revertTimer) {
           clearTimeout(revertTimer);
           revertTimer = null;
@@ -808,20 +998,32 @@ export const LuckyAssistant: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === ' ') {
+      if (e.key === 'Escape') {
+        if (isConversationActive) {
+          setIsConversationActive(false);
+          return;
+        }
+        if (isOpen) {
+          setIsOpen(false);
+          return;
+        }
         if (followMouse || isPreparingFollow) {
           stopFollowing();
+          return;
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [followMouse, isPreparingFollow, stopFollowing]);
+  }, [isConversationActive, isOpen, followMouse, isPreparingFollow, stopFollowing]);
 
   useEffect(() => {
     return () => {
       if (prepareFollowTimeoutRef.current) {
         clearTimeout(prepareFollowTimeoutRef.current);
+      }
+      if (dialogueTypewriterRef.current) {
+        clearInterval(dialogueTypewriterRef.current);
       }
     };
   }, []);
@@ -1365,10 +1567,11 @@ export const LuckyAssistant: React.FC = () => {
       {followMouse && (
         <button
           onClick={stopFollowing}
+          aria-label="Parar drone de perseguição do cursor"
           className="fixed top-6 right-6 z-50 px-3.5 py-1.5 rounded-full bg-cyan-950/95 border-2 border-cyan-400 text-cyan-200 text-xs font-mono font-bold flex items-center gap-2 shadow-[0_0_25px_rgba(0,240,255,0.45)] cursor-pointer hover:bg-cyan-900 hover:scale-105 transition-all"
           title="Clique ou pressione ESC para parar o drone"
         >
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" aria-hidden="true" />
           <span>🛑 Parar Drone (ESC)</span>
         </button>
       )}
@@ -1387,9 +1590,9 @@ export const LuckyAssistant: React.FC = () => {
         style={
           dashState === 'dashing_out'
             ? {
-                right: dockSide === 'left' ? undefined : '24px',
+                right: dockSide === 'free' ? `${position.x}px` : dockSide === 'left' ? undefined : '24px',
                 left: dockSide === 'left' ? '24px' : undefined,
-                bottom: '24px',
+                bottom: dockSide === 'free' ? `${position.y}px` : '24px',
                 transform: 'translateX(260px) rotate(24deg) scale(0.8)',
                 opacity: 0,
                 transition: 'transform 0.38s ease-in, opacity 0.35s ease-in',
@@ -1397,18 +1600,18 @@ export const LuckyAssistant: React.FC = () => {
               }
             : dashState === 'away'
             ? {
-                right: dockSide === 'left' ? undefined : '24px',
+                right: dockSide === 'free' ? `${position.x}px` : dockSide === 'left' ? undefined : '24px',
                 left: dockSide === 'left' ? '24px' : undefined,
-                bottom: '24px',
+                bottom: dockSide === 'free' ? `${position.y}px` : '24px',
                 opacity: 0,
                 pointerEvents: 'none',
                 visibility: 'hidden',
               }
             : dashState === 'dashing_in'
             ? {
-                right: dockSide === 'left' ? undefined : '24px',
+                right: dockSide === 'free' ? `${position.x}px` : dockSide === 'left' ? undefined : '24px',
                 left: dockSide === 'left' ? '24px' : undefined,
-                bottom: '24px',
+                bottom: dockSide === 'free' ? `${position.y}px` : '24px',
                 transform: 'translateX(0) rotate(0deg) scale(1)',
                 opacity: 1,
                 transition: 'transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease-out',
@@ -1451,6 +1654,7 @@ export const LuckyAssistant: React.FC = () => {
           <div
             onClick={() => setSpeechBubble(null)}
             title="Clique para fechar"
+            aria-hidden="true"
             className={`mb-2 max-w-[220px] sm:max-w-[260px] bg-[#0c051f]/95 border text-[11px] sm:text-xs font-mono px-3 py-2 rounded-xl backdrop-blur-md animate-fadeIn relative cursor-pointer select-none transition-all ${
               isDecrypting
                 ? 'border-emerald-400 text-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
@@ -1489,111 +1693,286 @@ export const LuckyAssistant: React.FC = () => {
           </div>
         )}
 
-        {/* ULTRA-COMPACT MENU POPUP */}
+        {/* ULTRA-COMPACT MENU POPUP / CONVERSATION VIEW */}
         {isOpen && (
-          <div className="mb-2 w-[270px] bg-[#080318]/95 border border-cyan-500/40 rounded-2xl p-2.5 shadow-[0_0_30px_rgba(0,240,255,0.25)] backdrop-blur-xl animate-scaleUp">
-            {/* Header */}
-            <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-white/[0.08]">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-cyan-400 rounded-xs shadow-[0_0_6px_#00f0ff]" />
-                <span className="font-bold text-white tracking-wider text-[11px]">LUCKY COPILOTO</span>
+          <div className="mb-2 w-[280px] sm:w-[300px] bg-[#080318]/95 border border-cyan-500/40 rounded-2xl p-2.5 shadow-[0_0_30px_rgba(0,240,255,0.25)] backdrop-blur-xl animate-scaleUp">
+            {isConversationActive ? (
+              <div className="space-y-2">
+                {/* Header da Conversa */}
+                <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.08]">
+                  <button
+                    onClick={() => setIsConversationActive(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        setIsConversationActive(false);
+                      }
+                    }}
+                    className="flex items-center gap-1 text-[11px] font-mono text-slate-300 hover:text-cyan-300 transition-colors cursor-pointer"
+                    aria-label="Voltar para o menu principal"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" />
+                    <span>Menu</span>
+                  </button>
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-400 font-bold">
+                    <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-ping" />
+                    <span>BATE-PAPO</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsConversationActive(false);
+                      setIsOpen(false);
+                    }}
+                    className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    aria-label="Fechar bate-papo"
+                  >
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+
+                {/* Balão do Lucky na conversa */}
+                <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/35 text-[11px] font-mono text-cyan-100 shadow-[0_0_15px_rgba(0,240,255,0.1)] relative">
+                  <div className="flex items-center gap-1.5 mb-1 text-[9px] text-cyan-400 font-bold uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 bg-cyan-400 rounded-xs" />
+                    <span>Lucky:</span>
+                  </div>
+                  {/* Texto acessível estável para leitor de tela */}
+                  <p className="sr-only">{(DIALOGUE_NODES[currentDialogueNodeId] || DIALOGUE_NODES['root']).speakerPrompt}</p>
+                  {/* Camada visual com digitação suave */}
+                  <p aria-hidden="true" className="leading-snug min-h-[32px]">
+                    {displayedDialogueText || (DIALOGUE_NODES[currentDialogueNodeId] || DIALOGUE_NODES['root']).speakerPrompt}
+                    {isTypingDialogue && (
+                      <span className="inline-block w-1 h-3 ml-0.5 bg-cyan-400 animate-pulse align-middle" />
+                    )}
+                  </p>
+                </div>
+
+                {/* Opções de resposta */}
+                <div className="space-y-1 pt-0.5">
+                  <div className="text-[9px] font-mono text-slate-400 uppercase tracking-wider px-0.5">
+                    Sua resposta:
+                  </div>
+                  {(DIALOGUE_NODES[currentDialogueNodeId] || DIALOGUE_NODES['root']).options.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSelectDialogueOption(opt)}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSelectDialogueOption(opt);
+                        }
+                      }}
+                      className="w-full p-1.5 px-2 rounded-lg bg-white/[0.03] hover:bg-cyan-500/20 hover:border-cyan-400/50 border border-white/[0.08] text-slate-200 hover:text-cyan-100 text-[11px] font-mono text-left transition-all flex items-center justify-between group cursor-pointer"
+                    >
+                      <span className="truncate">{opt.label}</span>
+                      <span className="text-[10px] text-cyan-400/60 group-hover:text-cyan-300 group-hover:translate-x-0.5 transition-all shrink-0 ml-1">
+                        ↵
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
+            ) : (
+              <>
+                {/* Header */}
+                <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-white/[0.08]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-cyan-400 rounded-xs shadow-[0_0_6px_#00f0ff]" />
+                    <span className="font-bold text-white tracking-wider text-[11px]">LUCKY COPILOTO</span>
+                  </div>
 
-              <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setSoundEnabled(!soundEnabled)}
+                      aria-label={soundEnabled ? 'Silenciar efeitos sonoros' : 'Ativar efeitos sonoros'}
+                      title={soundEnabled ? 'Silenciar efeitos sonoros' : 'Ativar efeitos sonoros'}
+                      className="p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer"
+                    >
+                      {soundEnabled ? (
+                        <Volume2 className="w-4 h-4 text-cyan-400" aria-hidden="true" />
+                      ) : (
+                        <VolumeX className="w-4 h-4 text-slate-500" aria-hidden="true" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      aria-label="Fechar menu do Lucky"
+                      title="Fechar menu"
+                      className="p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Entrada discreta: Conversar com Lucky */}
                 <button
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  title={soundEnabled ? 'Silenciar efeitos sonoros' : 'Ativar efeitos sonoros'}
-                  className="p-1 text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer"
+                  onClick={handleStartConversation}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      handleStartConversation();
+                    }
+                  }}
+                  className="w-full mb-1.5 py-1.5 px-2.5 rounded-lg text-[11px] font-mono font-bold flex items-center justify-between bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-500/35 transition-all cursor-pointer shadow-[0_0_10px_rgba(0,240,255,0.12)] group"
                 >
-                  {soundEnabled ? (
-                    <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
-                  ) : (
-                    <VolumeX className="w-3.5 h-3.5 text-slate-500" />
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden="true" />
+                    <span>Conversar com Lucky</span>
+                  </div>
+                  <span className="text-[10px] text-cyan-400/80 font-normal group-hover:translate-x-0.5 transition-transform">Bate-papo →</span>
                 </button>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
 
-            {/* Quick 2 Action Buttons: Destruir o cursor + Seguir o Mouse */}
-            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-              <button
-                aria-label="Destruir o cursor com feixe laser"
-                onClick={triggerDestroyCursor}
-                disabled={cursorCooldown > 0 || deathRayState !== 'idle'}
-                className={`py-2 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center leading-tight ${
-                  cursorCooldown > 0
-                    ? 'bg-rose-500/20 text-rose-300/60 border border-rose-500/30'
-                    : 'bg-rose-600/25 hover:bg-rose-600/40 text-rose-200 border border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.15)]'
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                <span>{cursorCooldown > 0 ? `Aguarde ${cursorCooldown}s` : 'Destruir o cursor'}</span>
-              </button>
+                {/* Opção do Menu: Reposicionar ao rolar (inicialmente desligada) */}
+                <div className="mb-2 p-1.5 px-2 rounded-lg bg-white/[0.02] border border-white/[0.06] flex items-center justify-between text-[10px] font-mono">
+                  <div className="flex flex-col pr-1">
+                    <span className="font-semibold text-slate-200">Reposicionar ao rolar</span>
+                    <span className="text-[9px] text-slate-400 leading-tight">
+                      {repositionOnScroll ? 'Ativo (troca de lado)' : 'Desligado (posição fixa)'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={repositionOnScroll}
+                    onClick={toggleRepositionOnScroll}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        toggleRepositionOnScroll();
+                      }
+                    }}
+                    aria-label="Alternar reposicionamento automático ao rolar"
+                    className={`relative inline-flex h-4 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-1 focus:ring-cyan-400 ${
+                      repositionOnScroll ? 'bg-cyan-500' : 'bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        repositionOnScroll ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
 
-              <button
-                onClick={toggleFollowMouse}
-                className={`py-2 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center leading-tight ${
-                  followMouse
-                    ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400 animate-pulse shadow-[0_0_12px_rgba(0,240,255,0.25)]'
-                    : isPreparingFollow
-                    ? 'bg-amber-500/25 text-amber-200 border border-amber-400/50 animate-pulse'
-                    : 'bg-white/[0.04] text-slate-300 hover:text-white border border-white/10'
-                }`}
-              >
-                <Crosshair className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span>
-                  {followMouse
-                    ? 'Parar Drone'
-                    : isPreparingFollow
-                    ? 'Calibrando...'
-                    : 'Seguir o Mouse'}
-                </span>
-              </button>
-            </div>
+                {/* Quick 2 Action Buttons: Destruir o cursor + Seguir o Mouse */}
+                <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+                  <button
+                    aria-label="Destruir o cursor com feixe laser"
+                    onClick={triggerDestroyCursor}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        if (cursorCooldown <= 0 && deathRayState === 'idle') {
+                          triggerDestroyCursor();
+                        }
+                      }
+                    }}
+                    disabled={cursorCooldown > 0 || deathRayState !== 'idle'}
+                    className={`py-2 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center leading-tight ${
+                      cursorCooldown > 0
+                        ? 'bg-rose-500/20 text-rose-300/60 border border-rose-500/30'
+                        : 'bg-rose-600/25 hover:bg-rose-600/40 text-rose-200 border border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.15)]'
+                    }`}
+                  >
+                    <Zap className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <span>{cursorCooldown > 0 ? `Aguarde ${cursorCooldown}s` : 'Destruir o cursor'}</span>
+                  </button>
 
-            {/* Quick Interactive Sprints: iFood & Duolingo */}
-            <div className="grid grid-cols-2 gap-1.5 mb-2">
-              <button
-                onClick={runIFoodSprint}
-                disabled={dashState !== 'idle'}
-                className="py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1 bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
-              >
-                <span>🛵 Pegar iFood</span>
-              </button>
-              <button
-                onClick={runDuolingoSprint}
-                disabled={dashState !== 'idle'}
-                className="py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer"
-              >
-                <span>🦉 Fazer Duolingo</span>
-              </button>
-            </div>
+                  <button
+                    onClick={toggleFollowMouse}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        toggleFollowMouse();
+                      }
+                    }}
+                    className={`py-2 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center leading-tight ${
+                      followMouse
+                        ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400 animate-pulse shadow-[0_0_12px_rgba(0,240,255,0.25)]'
+                        : isPreparingFollow
+                        ? 'bg-amber-500/25 text-amber-200 border border-amber-400/50 animate-pulse'
+                        : 'bg-white/[0.04] text-slate-300 hover:text-white border border-white/10'
+                    }`}
+                  >
+                    <Crosshair className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>
+                      {followMouse
+                        ? 'Parar Drone'
+                        : isPreparingFollow
+                        ? 'Calibrando...'
+                        : 'Seguir o Mouse'}
+                    </span>
+                  </button>
+                </div>
 
-            {/* Canonical 4 Navigation Options (Chips) */}
-            <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono">
-              {QUICK_LINKS.map((link) => (
-                <button
-                  key={link.id}
-                  onClick={() => handleSelectQuickLink(link)}
-                  className="p-2 rounded-lg bg-white/[0.03] hover:bg-cyan-500/20 hover:text-cyan-200 border border-white/[0.06] text-slate-300 transition-colors text-left flex items-center gap-2 truncate cursor-pointer"
-                >
-                  <span className="shrink-0">{link.icon}</span>
-                  <span className="truncate font-semibold">{link.label}</span>
-                </button>
-              ))}
-            </div>
+                {/* Quick Interactive Sprints: iFood & Duolingo */}
+                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  <button
+                    onClick={runIFoodSprint}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        if (dashState === 'idle') runIFoodSprint();
+                      }
+                    }}
+                    disabled={dashState !== 'idle'}
+                    className="py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1 bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
+                  >
+                    <span>🛵 Pegar iFood</span>
+                  </button>
+                  <button
+                    onClick={runDuolingoSprint}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        if (dashState === 'idle') runDuolingoSprint();
+                      }
+                    }}
+                    disabled={dashState !== 'idle'}
+                    className="py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer"
+                  >
+                    <span>🦉 Fazer Duolingo</span>
+                  </button>
+                </div>
+
+                {/* Canonical 4 Navigation Options (Chips) */}
+                <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono">
+                  {QUICK_LINKS.map((link) => (
+                    <button
+                      key={link.id}
+                      onClick={() => handleSelectQuickLink(link)}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSelectQuickLink(link);
+                        }
+                      }}
+                      className="p-2 rounded-lg bg-white/[0.03] hover:bg-cyan-500/20 hover:text-cyan-200 border border-white/[0.06] text-slate-300 transition-colors text-left flex items-center gap-2 truncate cursor-pointer"
+                    >
+                      <span className="shrink-0">{link.icon}</span>
+                      <span className="truncate font-semibold">{link.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
         {/* COMPACT SQUARE CYBERPUNK BOT AVATAR (~44px) - CHASSI METÁLICO INTACTO */}
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Assistente Lucky: clique para abrir menu de ações ou interagir"
           onMouseDown={handleMouseDown}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsOpen(!isOpen);
+              playCuteChirpMelody(2);
+            }
+          }}
           onClick={() => {
             if (hasMovedRef.current) {
               hasMovedRef.current = false;
@@ -1606,7 +1985,7 @@ export const LuckyAssistant: React.FC = () => {
             setIsOpen(!isOpen);
             playCuteChirpMelody(2);
           }}
-          className={`group relative cursor-grab active:cursor-grabbing transition-transform ${
+          className={`group relative cursor-grab active:cursor-grabbing transition-transform focus:outline-hidden focus:ring-2 focus:ring-cyan-400 rounded-xl ${
             deathRayState === 'charging' ? 'scale-110 animate-bounce' : ''
           }`}
           title={followMouse ? 'Clique para parar o drone' : 'LUCKY: Clique para abrir ou arraste'}

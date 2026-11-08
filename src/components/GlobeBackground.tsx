@@ -51,29 +51,50 @@ export const GlobeBackground: React.FC = () => {
     };
     window.addEventListener('lucky:power-surge', handlePowerSurge);
 
-    // Fade background softly on scroll down
+    // Check prefers-reduced-motion
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Visibility & Scroll-based render pausing to eliminate background thread work
+    let isVisible = true;
+    let isScrolledIntoView = true;
+
+    const checkScrollVisibility = () => {
+      // Pause RAF if scrolled more than 1.4 viewports down (past the hero globe)
+      const scrolledPast = window.scrollY > window.innerHeight * 1.35;
+      isScrolledIntoView = !scrolledPast;
+      if (isScrolledIntoView && isVisible && !animationFrameId && !prefersReducedMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      isVisible = document.visibilityState === 'visible';
+      if (isVisible && isScrolledIntoView && !animationFrameId && !prefersReducedMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+
+    // Fade background softly on scroll down & check visibility
     const handleScroll = () => {
       const scroll = window.scrollY;
       const op = Math.max(0.45, 1 - scroll / 3200);
       container.style.opacity = op.toString();
+      checkScrollVisibility();
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
 
     const handleMouseMove = (e: MouseEvent) => {
       mouseX = (e.clientX / window.innerWidth - 0.5) * 0.25;
       mouseY = (e.clientY / window.innerHeight - 0.5) * 0.15;
     };
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     };
     resize();
-    window.addEventListener('resize', resize);
-
-    // Precompute dots in radians with city proximity info
     const precomputedDots = GLOBE_LAND_DOTS.map(([latDeg, lonDeg]) => {
       const lat = (latDeg * Math.PI) / 180;
       const lon = (lonDeg * Math.PI) / 180;
@@ -112,7 +133,7 @@ export const GlobeBackground: React.FC = () => {
     let orbitProgress = 0;
     let tick = 0;
 
-    const render = () => {
+    function render() {
       tick += 0.012;
       rotation += 0.0017;
       orbitProgress = (orbitProgress + 0.004) % 1;
@@ -248,7 +269,15 @@ export const GlobeBackground: React.FC = () => {
           const py = cy - y3d * radius;
 
           const dotRadius = Math.max(0.65, z3d * 2.15);
-          const alpha = Math.min(1.0, z3d * 1.25);
+          let alpha = Math.min(1.0, z3d * 1.25);
+
+          // Suave atenuação dos pontos luminosos que passam diretamente atrás do texto da hero
+          const dxText = (px - cx) / (radius * 0.58);
+          const dyText = (py - (cy - radius * 0.44)) / (radius * 0.35);
+          const textDist = Math.hypot(dxText, dyText);
+          if (textDist < 1.0) {
+            alpha *= Math.max(0.14, Math.pow(textDist, 1.6));
+          }
 
           // Glowing metropolitan city nodes
           if (d.isNearCity) {
@@ -559,13 +588,31 @@ export const GlobeBackground: React.FC = () => {
       ctx.fillStyle = apexStreak;
       ctx.fillRect(apexX - 160, apexY - 1.2, 320, 2.4);
 
-      animationFrameId = requestAnimationFrame(render);
-    };
+      // Check visibility before scheduling next frame to eliminate idle CPU/GPU work
+      if (prefersReducedMotion) {
+        animationFrameId = 0;
+        return;
+      }
 
+      if (!isVisible || !isScrolledIntoView) {
+        animationFrameId = 0;
+        return;
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    }
+
+    // Attach listeners and start animation loop
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     render();
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll);

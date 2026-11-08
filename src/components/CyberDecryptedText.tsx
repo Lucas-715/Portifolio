@@ -23,12 +23,36 @@ export const CyberDecryptedText: React.FC<CyberDecryptedTextProps> = ({
 }) => {
   const [displayText, setDisplayText] = useState<string>(text);
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState<boolean>(false);
   const containerRef = useRef<HTMLElement | null>(null);
   const hasTriggeredRef = useRef<boolean>(false);
+  const intervalRef = useRef<any>(null);
+  const timerRef = useRef<any>(null);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      setPrefersReducedMotion(mq.matches);
+      const listener = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+      mq.addEventListener?.('change', listener);
+      return () => mq.removeEventListener?.('change', listener);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setDisplayText(text);
+      setIsDecrypting(false);
+      return;
+    }
+
     const el = containerRef.current;
     if (!el) return;
+
+    const cleanupTimers = () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
 
     const startDecryption = () => {
       if (hasTriggeredRef.current) return;
@@ -39,12 +63,12 @@ export const CyberDecryptedText: React.FC<CyberDecryptedTextProps> = ({
       let frame = 0;
       let revealedChars = 0;
 
-      const timer = setTimeout(() => {
-        const interval = setInterval(() => {
+      timerRef.current = setTimeout(() => {
+        intervalRef.current = setInterval(() => {
           frame++;
 
           if (frame < scrambleLoops) {
-            // Fase 1: Cifra cyberpunk aleatória intensa
+            // Fase 1: Cifra cyberpunk aleatória intensa preservando quebras e espaços
             let scrambled = '';
             for (let i = 0; i < totalLen; i++) {
               if (text[i] === ' ' || text[i] === '\n') {
@@ -55,12 +79,12 @@ export const CyberDecryptedText: React.FC<CyberDecryptedTextProps> = ({
             }
             setDisplayText(scrambled);
           } else {
-            // Fase 2: Descriptografia progressiva caractere a caractere (ritmo cinematográfico)
+            // Fase 2: Descriptografia progressiva caractere a caractere
             revealedChars += 1;
             if (revealedChars >= totalLen) {
               setDisplayText(text);
               setIsDecrypting(false);
-              clearInterval(interval);
+              clearInterval(intervalRef.current);
             } else {
               let current = text.slice(0, revealedChars);
               for (let i = revealedChars; i < totalLen; i++) {
@@ -75,41 +99,57 @@ export const CyberDecryptedText: React.FC<CyberDecryptedTextProps> = ({
           }
         }, speed);
       }, delay);
-
-      return () => clearTimeout(timer);
     };
 
+    let observer: IntersectionObserver | null = null;
+
     if (triggerOnScroll && typeof window !== 'undefined' && 'IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(
+      observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting && !hasTriggeredRef.current) {
               startDecryption();
-              observer.unobserve(entry.target);
+              observer?.unobserve(entry.target);
             }
           });
         },
         { threshold: 0.25 }
       );
-
       observer.observe(el);
-      return () => observer.disconnect();
     } else {
       startDecryption();
     }
-  }, [text, speed, delay, scrambleLoops, triggerOnScroll]);
+
+    return () => {
+      cleanupTimers();
+      if (observer) observer.disconnect();
+    };
+  }, [text, speed, delay, scrambleLoops, triggerOnScroll, prefersReducedMotion]);
 
   const Tag = tag as any;
+
+  if (prefersReducedMotion) {
+    return (
+      <Tag ref={containerRef} className={className}>
+        {text}
+      </Tag>
+    );
+  }
 
   return (
     <Tag
       ref={containerRef}
-      className={`${className} ${
-        isDecrypting ? 'text-cyan-300 drop-shadow-[0_0_14px_rgba(0,240,255,0.7)]' : ''
-      } transition-colors duration-200`}
+      className={`${className} transition-colors duration-200`}
     >
-      {displayText}
+      {/* Texto estável e estático para tecnologias assistivas (leitores de tela) */}
+      <span className="sr-only">{text}</span>
+      {/* Camada visual com animação que não afeta a árvore de acessibilidade nem causa layout shift cumulativo */}
+      <span
+        aria-hidden="true"
+        className={isDecrypting ? 'text-cyan-300 drop-shadow-[0_0_14px_rgba(0,240,255,0.7)]' : ''}
+      >
+        {displayText}
+      </span>
     </Tag>
   );
 };
-

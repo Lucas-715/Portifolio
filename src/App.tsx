@@ -35,6 +35,18 @@ export function App() {
     }
   }, []);
 
+  // Keyboard Escape listener for Lightbox
+  useEffect(() => {
+    if (!lightboxImage) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxImage(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxImage]);
+
   return (
     <div className="relative min-h-screen bg-[#04020a] text-slate-100 selection:bg-cyan-500/30 selection:text-white overflow-x-hidden">
       {/* 1. 3D ORBITAL GLOBE */}
@@ -47,11 +59,11 @@ export function App() {
       {isIfoodRef && (
         <aside
           aria-label="Notificação de contexto"
-          className="fixed top-4 inset-x-0 z-30 px-6 pointer-events-none"
+          className="fixed top-6 inset-x-0 z-30 px-6 pointer-events-none"
         >
           <div className="max-w-xl mx-auto px-4 py-2 rounded-full bg-rose-950/90 border border-rose-500/40 backdrop-blur-md shadow-[0_0_20px_rgba(244,63,94,0.3)] flex items-center justify-between text-xs font-mono text-rose-200 pointer-events-auto">
             <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" aria-hidden="true" />
               <span>Contexto ativo: Candidatura Trilha AI Engineer</span>
             </span>
             <a
@@ -65,46 +77,38 @@ export function App() {
       )}
 
       {/* MAIN CONTENT */}
-      <main id="top" className="relative z-10 pt-4">
+      <main id="top" className="relative z-10">
         {/* HERO SECTION */}
-        <section className="min-h-[88vh] flex flex-col items-center justify-center pt-8 pb-14 px-6 sm:px-12 text-center">
-          <div className="max-w-2xl mx-auto flex flex-col items-center relative z-10">
-            <CyberDecryptedText
-              text="Lucas Almeida"
-              tag="h1"
-              delay={100}
-              speed={24}
-              className="font-display text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-cyber-gradient leading-[1.04] drop-shadow-[0_4px_28px_rgba(0,0,0,0.95)]"
-            />
+        <section className="min-h-screen flex flex-col items-center justify-center pt-8 pb-14 px-6 sm:px-12 text-center">
+          <div className="max-w-2xl mx-auto flex flex-col items-center relative z-10 before:content-[''] before:absolute before:-inset-x-12 before:-inset-y-8 before:-z-10 before:rounded-[50%] before:bg-[radial-gradient(ellipse_at_center,rgba(4,2,10,0.85)_0%,rgba(4,2,10,0.55)_60%,transparent_80%)] before:backdrop-blur-[2px]">
+            <h1 className="font-display text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-cyber-gradient leading-[1.04] drop-shadow-[0_4px_28px_rgba(0,0,0,0.95)]">
+              Lucas Almeida
+            </h1>
 
-            <CyberDecryptedText
-              text="Engenharia de Software · Aprendizado Federado · Desenvolvimento Full Stack"
-              tag="p"
-              delay={280}
-              speed={18}
-              className="mt-3 text-sm sm:text-lg md:text-xl font-medium text-slate-100 tracking-wide drop-shadow-[0_2px_14px_rgba(0,0,0,0.9)] max-w-xl mx-auto"
-            />
+            <p className="mt-3 text-sm sm:text-lg md:text-xl font-medium text-slate-100 tracking-wide drop-shadow-[0_2px_14px_rgba(0,0,0,0.9)] max-w-xl mx-auto">
+              Engenharia de Software · Aprendizado Federado · Desenvolvimento Full Stack
+            </p>
 
-            <p className="mt-4 max-w-xl text-xs sm:text-sm text-slate-200 leading-relaxed font-normal drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] mx-auto">
+            <p className="mt-4 max-w-xl text-xs sm:text-sm md:text-base text-slate-200 leading-relaxed font-normal drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] mx-auto">
               Graduando em <strong className="text-white font-semibold">Engenharia de Software (UFC)</strong> e <strong className="text-white font-semibold">Técnico em Informática (IFMA)</strong>. Projetos acadêmicos e autorais com foco em Aprendizado Federado (FL), explicabilidade de modelos (XAI) e prototipação de sistemas com LLMs.
             </p>
 
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-3.5">
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
               <a
                 href="#projetos"
-                className="btn-cyber-primary px-6 py-2.5 rounded-full text-xs sm:text-sm flex items-center gap-2 font-mono font-bold cursor-pointer"
+                className="btn-cyber-primary px-5 py-2.5 rounded-full text-xs sm:text-sm flex items-center gap-2 font-mono font-bold cursor-pointer"
               >
                 <span>Explorar Projetos</span>
-                <ArrowUpRight className="w-4 h-4" />
+                <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
               </a>
               <a
                 href={CONTACT_INFO.github}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-contact-link="true"
-                className="btn-cyber-ghost px-6 py-2.5 rounded-full text-xs sm:text-sm flex items-center gap-2 font-mono cursor-pointer"
+                className="btn-cyber-ghost px-5 py-2.5 rounded-full text-xs sm:text-sm flex items-center gap-2 font-mono cursor-pointer"
               >
-                <Github className="w-4 h-4" />
+                <Github className="w-4 h-4" aria-hidden="true" />
                 <span>github.com/Lucas-715</span>
               </a>
             </div>
@@ -177,7 +181,7 @@ export function App() {
                   className="text-cyan-300 hover:text-white flex items-center gap-1 transition-colors"
                 >
                   <span>Lucas-715</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                 </a>
               </div>
             </div>
@@ -250,7 +254,7 @@ export function App() {
                 className="text-xs font-mono text-slate-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
               >
                 <span>Ver todos no GitHub</span>
-                <ExternalLink className="w-3.5 h-3.5" />
+                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
               </a>
             </div>
 
@@ -271,7 +275,7 @@ export function App() {
                       {proj.category}
                     </span>
                   </div>
-                  <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-cyan-300 shrink-0" />
+                  <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-cyan-300 shrink-0" aria-hidden="true" />
                 </a>
               ))}
             </div>
@@ -328,9 +332,10 @@ export function App() {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-contact-link="true"
+                aria-label="Acessar perfil do LinkedIn de Lucas Almeida"
                 className="btn-cyber-primary px-4 py-2 rounded-xl text-xs flex items-center gap-2 font-mono group cursor-pointer"
               >
-                <Linkedin className="w-4 h-4 text-cyan-300 group-hover:scale-110 transition-transform" />
+                <Linkedin className="w-4 h-4 text-cyan-300 group-hover:scale-110 transition-transform" aria-hidden="true" />
                 <span>LinkedIn</span>
               </a>
 
@@ -339,18 +344,20 @@ export function App() {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-contact-link="true"
+                aria-label="Acessar repositórios do GitHub de Lucas Almeida"
                 className="btn-cyber-ghost px-4 py-2 rounded-xl text-xs flex items-center gap-2 font-mono group cursor-pointer"
               >
-                <Github className="w-4 h-4 text-slate-300 group-hover:text-cyan-300 group-hover:scale-110 transition-all" />
+                <Github className="w-4 h-4 text-slate-300 group-hover:text-cyan-300 group-hover:scale-110 transition-all" aria-hidden="true" />
                 <span>GitHub</span>
               </a>
 
               <a
                 href={`mailto:${CONTACT_INFO.email}`}
                 data-contact-link="true"
+                aria-label={`Enviar email para ${CONTACT_INFO.email}`}
                 className="btn-cyber-ghost px-4 py-2 rounded-xl text-xs flex items-center gap-2 font-mono group cursor-pointer"
               >
-                <Mail className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
+                <Mail className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" aria-hidden="true" />
                 <span>{CONTACT_INFO.email}</span>
               </a>
             </div>
@@ -382,9 +389,11 @@ export function App() {
           <div className="relative max-w-5xl max-h-[90vh] flex flex-col items-center">
             <button
               onClick={() => setLightboxImage(null)}
-              className="absolute -top-10 right-0 text-white hover:text-cyan-400 p-2 text-xs font-mono flex items-center gap-1 cursor-pointer"
+              aria-label="Fechar visualizador de imagem ampliada"
+              className="absolute -top-10 right-0 text-white hover:text-cyan-400 p-2 text-xs font-mono flex items-center gap-1 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-cyan-400 rounded-lg"
             >
-              <X className="w-4 h-4" /> Fechar (ESC)
+              <X className="w-4 h-4" aria-hidden="true" />
+              <span>Fechar (ESC)</span>
             </button>
             <img
               src={lightboxImage}
