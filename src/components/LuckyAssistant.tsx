@@ -351,7 +351,7 @@ export const LuckyAssistant: React.FC = () => {
         { id: 'top', side: 'right', phrase: 'E aí! Sou o Lucky. Role para explorar os projetos e a trajetória do Lucas!' },
         { id: 'sobre', side: 'left', phrase: 'Engenharia de software com modularidade, testes automatizados e IA prática.' },
         { id: 'projetos', side: 'right', phrase: 'Destaque no Federated-XAI-Lab: 5 sementes no UCI HAR e Macro-F1 de 0,9270!' },
-        { id: 'skills', side: 'left', phrase: 'Arsenal Tecnológico! PyTorch, Next.js, Vue.js 3, FastAPI, SQLite e Vampire.' },
+        { id: 'skills', side: 'left', phrase: 'Arsenal Tecnológico! PyTorch, Next.js, Vue.js 3, FastAPI, SQLite e Docker.' },
         { id: 'formacao', side: 'right', phrase: 'Trajetória completa: IFMA, Engenharia na UFC e mais de 400h comprovadas de extensão!' },
         { id: 'contato', side: 'right', phrase: 'Chegou ao fim da base! Bora trocar uma ideia com o Lucas? O contato tá aqui!' },
       ];
@@ -395,9 +395,9 @@ export const LuckyAssistant: React.FC = () => {
           // Trigger section speech if cooldown passed (descriptografia visual cyberpunk ao descer a página)
           const now = Date.now();
           const lastSpoken = sectionCooldownRef.current[currentSec] || 0;
-          if (now - lastSpoken > 24000 && prevSec !== null) {
+          if (now - lastSpoken > 8000 && prevSec !== null) {
             sectionCooldownRef.current[currentSec] = now;
-            showDecryptingBubble(secConfig.phrase, 9500);
+            showDecryptingBubble(secConfig.phrase, 8500);
           }
         }
       }
