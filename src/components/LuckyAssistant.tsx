@@ -42,6 +42,7 @@ export const LuckyAssistant: React.FC = () => {
   const [dockSide, setDockSide] = useState<'right' | 'left' | 'free'>('right');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [followMouse, setFollowMouse] = useState(false);
+  const [isPreparingFollow, setIsPreparingFollow] = useState(false);
   const [tiltAngle, setTiltAngle] = useState(0);
 
   // Cinematic "Raio da Morte" (Death Ray) & Destruir Cursor State (Fase 3)
@@ -65,6 +66,8 @@ export const LuckyAssistant: React.FC = () => {
   const chargeIntervalRef = useRef<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const typingTimerRef = useRef<number | null>(null);
+  const bubbleTimerRef = useRef<number | null>(null);
+  const prepareFollowTimeoutRef = useRef<number | null>(null);
 
   // Audio Context initialization
   const getAudioContext = () => {
@@ -196,9 +199,13 @@ export const LuckyAssistant: React.FC = () => {
   }, [soundEnabled]);
 
   // Speech bubble with typewriter effect and click sounds (duração estendida para leitura confortável)
-  const showBubble = useCallback((text: string, duration = 5500) => {
+  const showBubble = useCallback((text: string, duration = 6000) => {
     if (typingTimerRef.current) {
       clearInterval(typingTimerRef.current);
+    }
+    if (bubbleTimerRef.current) {
+      clearTimeout(bubbleTimerRef.current);
+      bubbleTimerRef.current = null;
     }
     setSpeechBubble(text);
     setDisplayedSpeech('');
@@ -216,12 +223,13 @@ export const LuckyAssistant: React.FC = () => {
     }, 24);
     typingTimerRef.current = interval as unknown as number;
 
-    // Garante tempo de leitura suficiente: digitação + base de 3.5s + 40ms por caractere
+    // Garante tempo de leitura suficiente: digitação + base de 5.0s + 50ms por caractere
     const typingDuration = (text.length / 2) * 24;
-    const comfortableReadingDuration = Math.max(duration, typingDuration + 3500 + text.length * 40);
+    const comfortableReadingDuration = Math.max(duration, typingDuration + 5000 + text.length * 50);
 
-    setTimeout(() => {
+    bubbleTimerRef.current = window.setTimeout(() => {
       setSpeechBubble((current) => (current === text ? null : current));
+      bubbleTimerRef.current = null;
     }, comfortableReadingDuration);
   }, [playTypewriterClick]);
 
@@ -303,15 +311,15 @@ export const LuckyAssistant: React.FC = () => {
             setTimeout(() => setTiltAngle(0), 500);
           }
 
-          // Trigger section speech if cooldown passed (22s cooldown)
+          // Trigger section speech if cooldown passed (duração estendida de ~9.5s para leitura tranquila ao rolar)
           const now = Date.now();
           const lastSpoken = sectionCooldownRef.current[currentSec] || 0;
-          if (now - lastSpoken > 22000 && prevSec !== null) {
+          if (now - lastSpoken > 26000 && prevSec !== null) {
             sectionCooldownRef.current[currentSec] = now;
-            showBubble(secConfig.phrase, 3600);
+            showBubble(secConfig.phrase, 9500);
             playCuteChirpMelody(2);
             setEyeState('happy');
-            setTimeout(() => setEyeState('normal'), 1500);
+            setTimeout(() => setEyeState('normal'), 2500);
           }
         }
       }
@@ -319,7 +327,7 @@ export const LuckyAssistant: React.FC = () => {
 
     window.addEventListener('scroll', handleScrollWatcher, { passive: true });
     return () => window.removeEventListener('scroll', handleScrollWatcher);
-  }, [followMouse, showBubble, playCuteChirpMelody]);
+  }, [followMouse, isPreparingFollow, showBubble, playCuteChirpMelody]);
 
   // REAÇÃO AO MODO INSPECIONAR / DEVTOOLS
   useEffect(() => {
@@ -398,23 +406,72 @@ export const LuckyAssistant: React.FC = () => {
 
   // Stop following immediately on ESC or Space
   const stopFollowing = useCallback(() => {
+    if (prepareFollowTimeoutRef.current) {
+      clearTimeout(prepareFollowTimeoutRef.current);
+      prepareFollowTimeoutRef.current = null;
+    }
+    setIsPreparingFollow(false);
     setFollowMouse(false);
     setTiltAngle(0);
-    showBubble('Modo drone desativado!', 1800);
+    setDockSide('right');
+    setPosition({ x: 24, y: 24 });
+    showBubble('Modo drone desativado!', 3500);
     playCuteChirpMelody(2);
   }, [showBubble, playCuteChirpMelody]);
+
+  // Falar primeiro o que tem para falar com o robô parado, e só depois começar a seguir o mouse
+  const toggleFollowMouse = useCallback(() => {
+    if (followMouse || isPreparingFollow) {
+      stopFollowing();
+      return;
+    }
+
+    // 1. Fecha o menu e fala primeiro com o robô estático na posição atual
+    setIsOpen(false);
+    setIsPreparingFollow(true);
+    playCuteChirpMelody(2);
+    setEyeState('happy');
+    setTimeout(() => setEyeState('normal'), 2500);
+    showBubble('Modo Drone ativado! Calibrando propulsores para te acompanhar... (ESC para parar)', 7500);
+
+    // 2. Aguarda o usuário ler a fala com ele parado antes de iniciar o voo
+    if (prepareFollowTimeoutRef.current) {
+      clearTimeout(prepareFollowTimeoutRef.current);
+    }
+    prepareFollowTimeoutRef.current = window.setTimeout(() => {
+      if (botRef.current) {
+        const rect = botRef.current.getBoundingClientRect();
+        setPosition({
+          x: Math.max(16, window.innerWidth - rect.right),
+          y: Math.max(16, window.innerHeight - rect.bottom),
+        });
+      }
+      setDockSide('free');
+      setFollowMouse(true);
+      setIsPreparingFollow(false);
+      prepareFollowTimeoutRef.current = null;
+    }, 3000);
+  }, [followMouse, isPreparingFollow, stopFollowing, playCuteChirpMelody, showBubble]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === ' ') {
-        if (followMouse) {
+        if (followMouse || isPreparingFollow) {
           stopFollowing();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [followMouse, stopFollowing]);
+  }, [followMouse, isPreparingFollow, stopFollowing]);
+
+  useEffect(() => {
+    return () => {
+      if (prepareFollowTimeoutRef.current) {
+        clearTimeout(prepareFollowTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Continuous Mouse Tracking for Eyes and Targeting
   useEffect(() => {
@@ -975,25 +1032,32 @@ export const LuckyAssistant: React.FC = () => {
           isHoveredRef.current = false;
         }}
         style={
-          dockSide === 'left'
+          followMouse
+            ? {
+                right: `${position.x}px`,
+                bottom: `${position.y}px`,
+                transform: `rotate(${tiltAngle}deg)`,
+                transition: 'none',
+              }
+            : dockSide === 'left'
             ? {
                 left: '24px',
                 bottom: '24px',
                 transform: `rotate(${tiltAngle}deg)`,
-                transition: isDraggingRef.current || followMouse ? 'none' : 'left 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease-out',
+                transition: isDraggingRef.current ? 'none' : 'left 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease-out',
               }
             : dockSide === 'right'
             ? {
                 right: '24px',
                 bottom: '24px',
                 transform: `rotate(${tiltAngle}deg)`,
-                transition: isDraggingRef.current || followMouse ? 'none' : 'right 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease-out',
+                transition: isDraggingRef.current ? 'none' : 'right 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease-out',
               }
             : {
                 right: `${position.x}px`,
                 bottom: `${position.y}px`,
                 transform: `rotate(${tiltAngle}deg)`,
-                transition: isDraggingRef.current || followMouse ? 'none' : 'transform 0.15s ease-out',
+                transition: isDraggingRef.current ? 'none' : 'transform 0.15s ease-out',
               }
         }
         className={`fixed z-50 select-none flex flex-col pointer-events-auto ${
@@ -1069,25 +1133,23 @@ export const LuckyAssistant: React.FC = () => {
               </button>
 
               <button
-                onClick={() => {
-                  const next = !followMouse;
-                  setFollowMouse(next);
-                  if (next) {
-                    showBubble('Drone ativado! Pressione ESC para parar.', 2500);
-                    playCuteChirpMelody(2);
-                    setIsOpen(false);
-                  } else {
-                    stopFollowing();
-                  }
-                }}
+                onClick={toggleFollowMouse}
                 className={`py-2 px-2 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center leading-tight ${
                   followMouse
                     ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400 animate-pulse shadow-[0_0_12px_rgba(0,240,255,0.25)]'
+                    : isPreparingFollow
+                    ? 'bg-amber-500/25 text-amber-200 border border-amber-400/50 animate-pulse'
                     : 'bg-white/[0.04] text-slate-300 hover:text-white border border-white/10'
                 }`}
               >
                 <Crosshair className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span>{followMouse ? 'Parar Drone' : 'Seguir o Mouse'}</span>
+                <span>
+                  {followMouse
+                    ? 'Parar Drone'
+                    : isPreparingFollow
+                    ? 'Calibrando...'
+                    : 'Seguir o Mouse'}
+                </span>
               </button>
             </div>
 
